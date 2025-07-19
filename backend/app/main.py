@@ -66,23 +66,39 @@ async def initialize_fts_system():
         # Import FTS functions (delayed import to avoid circular dependencies)
         from core.fts_system import start_tracking_service, is_tracking_running
         
-        # Run the FTS initialization in a separate thread to avoid blocking
+        # Check if already running
+        if is_tracking_running:
+            logger.info("✅ Face Tracking System is already running")
+            return
+        
+        # Run the FTS initialization with proper error handling
         def start_fts():
             try:
+                import torch
+                # Set conservative memory settings for this process
+                torch.set_num_threads(1)
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                
                 start_tracking_service()
                 logger.info("✅ Face Tracking System initialized successfully")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Face Tracking System: {e}")
+                # Don't raise the exception to prevent server startup failure
         
-        # Start FTS in background thread
-        fts_thread = threading.Thread(target=start_fts, daemon=True)
+        # Start FTS in background thread with proper exception handling
+        fts_thread = threading.Thread(target=start_fts, daemon=True, name="FTS-Init")
         fts_thread.start()
         
-        # Give it a moment to start
-        await asyncio.sleep(3)  # 3 second delay for FTS startup
+        # Give it a moment to start but don't wait too long
+        await asyncio.sleep(2)  # Reduced from 3 to 2 seconds for faster startup
+        
+        logger.info("🎯 Face Recognition Attendance System API is ready!")
         
     except Exception as e:
         logger.error(f"❌ Error during FTS initialization: {e}")
+        # Log but don't raise to prevent server startup failure
+        logger.info("🎯 Face Recognition Attendance System API is ready!")  # Still mark as ready
 
 async def shutdown_fts_system():
     """Shutdown the Face Tracking System gracefully"""
@@ -119,10 +135,10 @@ async def lifespan(app: FastAPI):
             await initialize_fts_system()
         except Exception as e:
             logger.error(f"❌ FTS initialization failed but continuing with API: {e}")
+            logger.info("🎯 Face Recognition Attendance System API is ready!")
     else:
         logger.info("⚠️ Face Tracking System auto-start is disabled")
-    
-    logger.info("🎯 Face Recognition Attendance System API is ready!")
+        logger.info("🎯 Face Recognition Attendance System API is ready!")
     
     yield
     
@@ -131,7 +147,10 @@ async def lifespan(app: FastAPI):
     
     # Gracefully shutdown FTS system
     if fts_auto_start:
-        await shutdown_fts_system()
+        try:
+            await shutdown_fts_system()
+        except Exception as e:
+            logger.error(f"❌ Error during FTS shutdown: {e}")
     
     logger.info("✅ Shutdown complete")
 

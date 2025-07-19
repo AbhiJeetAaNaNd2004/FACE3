@@ -66,7 +66,7 @@ def check_requirements():
         import fastapi
         import uvicorn
         import sqlalchemy
-        # import psycopg2  # Not needed for SQLite
+        # import psycopg2  # PostgreSQL only - no SQLite support
         import passlib
         import jose
         print("✅ All required packages are installed")
@@ -119,6 +119,20 @@ def initialize_database():
 def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=True, force_kill=False):
     """Start the FastAPI server with integrated FTS"""
     try:
+        print("🔧 Optimizing system for Face Tracking System...")
+        
+        # Set environment variables for memory optimization BEFORE any imports
+        os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+        os.environ['OMP_NUM_THREADS'] = '1'
+        os.environ['MKL_NUM_THREADS'] = '1'
+        os.environ['NUMEXPR_NUM_THREADS'] = '1'
+        os.environ['PYTORCH_JIT'] = '0'
+        
+        # Force single worker mode if FTS is enabled to prevent memory conflicts
+        if enable_fts and workers > 1:
+            print("⚠️ Forcing single worker mode when FTS is enabled to prevent memory conflicts")
+            workers = 1
+        
         # Check if port is available or force kill if requested
         if force_kill or not check_port_available(host, port):
             if force_kill:
@@ -152,18 +166,21 @@ def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=
             os.environ["FTS_AUTO_START"] = "false"
             print("⚠️ Face Tracking System auto-start is disabled")
         
-        # Build uvicorn command
+        # Build uvicorn command with conservative settings
         cmd = [
             sys.executable, "-m", "uvicorn",
             "app.main:app",
             "--host", host,
-            "--port", str(port)
+            "--port", str(port),
+            "--access-log",  # Enable access logging
+            "--loop", "asyncio",  # Use asyncio loop for better compatibility
         ]
         
         if reload:
             cmd.append("--reload")
         
-        if workers > 1 and not reload:
+        # Only use multiple workers if reload is disabled and FTS is disabled
+        if workers > 1 and not reload and not enable_fts:
             cmd.extend(["--workers", str(workers)])
         
         print("🎯 Face Recognition Attendance System")
@@ -227,9 +244,15 @@ def main():
     )
     
     parser.add_argument(
+        "--enable-fts", 
+        action="store_true", 
+        help="Enable Face Tracking System auto-start (default: disabled for stability)"
+    )
+    
+    parser.add_argument(
         "--no-fts", 
         action="store_true", 
-        help="Disable Face Tracking System auto-start"
+        help="Disable Face Tracking System auto-start (legacy option)"
     )
     
     parser.add_argument(
@@ -265,13 +288,25 @@ def main():
             print("\n💡 Tip: Try running with --init-db to initialize the database")
             sys.exit(1)
     
+    # Determine FTS enable status
+    # Priority: --enable-fts > --no-fts > default (disabled for stability)
+    if args.enable_fts:
+        enable_fts = True
+        print("🤖 Face Tracking System will be enabled (--enable-fts)")
+    elif args.no_fts:
+        enable_fts = False
+        print("⚠️ Face Tracking System will be disabled (--no-fts)")
+    else:
+        enable_fts = False  # Default to disabled for stability
+        print("⚠️ Face Tracking System disabled by default (use --enable-fts to enable)")
+    
     # Start unified server
     start_server(
         host=args.host,
         port=args.port,
         reload=args.reload,
         workers=args.workers,
-        enable_fts=not args.no_fts,
+        enable_fts=enable_fts,
         force_kill=args.force
     )
 

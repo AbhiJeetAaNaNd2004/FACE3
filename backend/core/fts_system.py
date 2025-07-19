@@ -2,7 +2,19 @@ import cv2
 import os
 import numpy as np
 import faiss
+
+# Configure PyTorch before importing to avoid shared memory issues
 import torch
+# Disable PyTorch multiprocessing shared memory to prevent DLL loading errors
+torch.multiprocessing.set_sharing_strategy('file_system')
+# Set PyTorch to use fewer threads to reduce memory pressure
+torch.set_num_threads(1)
+# Disable CUDA caching if available to reduce memory usage
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    # Set memory fraction to prevent OOM on GPU
+    torch.cuda.set_per_process_memory_fraction(0.7)
+
 import time
 import threading
 import csv
@@ -765,21 +777,57 @@ class FaceTrackingSystem:
             log_message(f"[ERROR] Exception in cleanup_database: {e}")
 
     def shutdown(self):
-        """Properly shutdown the system"""
+        """Shutdown the tracking system gracefully"""
+        log_message("[SHUTDOWN] Initiating system shutdown...")
+        
+        # Set shutdown flag to stop all threads
+        self.shutdown_flag.set()
+        
+        # Stop camera threads
+        for thread in self.camera_threads:
+            if thread.is_alive():
+                thread.join(timeout=2.0)
+        
+        # Stop embedding update worker
+        if self.embedding_update_worker and self.embedding_update_worker.is_alive():
+            self.embedding_update_worker.join(timeout=2.0)
+        
+        # Stop stats thread
+        if hasattr(self, 'stats_thread') and self.stats_thread.is_alive():
+            self.stats_thread.join(timeout=1.0)
+        
+        # Clean up FaceAnalysis apps
+        for gpu_id, app in self.apps.items():
+            try:
+                if hasattr(app, 'det_model'):
+                    del app.det_model
+                if hasattr(app, 'rec_model'):
+                    del app.rec_model
+                del app
+                log_message(f"[CLEANUP] Cleaned up FaceAnalysis for GPU {gpu_id}")
+            except Exception as e:
+                log_message(f"[CLEANUP ERROR] Error cleaning up GPU {gpu_id}: {e}")
+        
+        # Clear all data structures
+        self.apps.clear()
+        self.trackers.clear()
+        self.latest_frames.clear()
+        self.latest_faces.clear()
+        self.embedding_cache.clear()
+        
+        # Clean up PyTorch cache
         try:
-            log_message("[SHUTDOWN] Initiating shutdown...")
-            self.shutdown_flag.set()
-            if self.embedding_update_worker and self.embedding_update_worker.is_alive():
-                log_message("[SHUTDOWN] Waiting for embedding update worker...")
-                self.embedding_update_worker.join(timeout=5)
-            for thread in self.camera_threads:
-                if thread.is_alive():
-                    thread.join(timeout=2)
-            if hasattr(self, 'db_manager'):
-                self.db_manager.close()
-            log_message("[SHUTDOWN] Shutdown completed")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
         except Exception as e:
-            log_message(f"[ERROR] Exception during shutdown: {e}")
+            log_message(f"[CLEANUP] PyTorch cleanup warning: {e}")
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        log_message("[SHUTDOWN] System shutdown complete")
 
     def get_database_stats(self):
         """Get database statistics"""
@@ -818,22 +866,64 @@ class FaceTrackingSystem:
 
     def _initialize_multi_gpu_insightface(self):
         # Load camera configurations from database
-        cameras = load_camera_configurations()
+        try:
+            cameras = load_camera_configurations()
+        except Exception as e:
+            log_message(f"[GPU WARNING] Could not load camera configurations: {e}")
+            # Use default GPU 0 if database is not available
+            cameras = [type('Camera', (), {'gpu_id': 0})()]
+        
         gpu_ids = list(set([cam.gpu_id for cam in cameras]))
         for gpu_id in gpu_ids:
-            providers = ['CPUExecutionProvider']
-            if torch.cuda.is_available() and gpu_id < torch.cuda.device_count():
-                providers = [('CUDAExecutionProvider', {'device_id': gpu_id}), 'CPUExecutionProvider']
-            else:
-                log_message(f"[GPU WARNING] GPU ID {gpu_id} unavailable, using CPU")
-            self.apps[gpu_id] = FaceAnalysis(name='antelopev2',
-                providers=providers,
-                allowed_modules=['detection', 'recognition'])
-            self.apps[gpu_id].prepare(ctx_id=gpu_id, det_size=(416, 416), det_thresh=DET_THRESH)
+            try:
+                providers = ['CPUExecutionProvider']
+                if torch.cuda.is_available() and gpu_id < torch.cuda.device_count():
+                    providers = [('CUDAExecutionProvider', {'device_id': gpu_id}), 'CPUExecutionProvider']
+                else:
+                    log_message(f"[GPU WARNING] GPU ID {gpu_id} unavailable, using CPU")
+                
+                # Initialize with conservative memory settings
+                self.apps[gpu_id] = FaceAnalysis(
+                    name='antelopev2',
+                    providers=providers,
+                    allowed_modules=['detection', 'recognition'],
+                    download=False  # Prevent automatic downloads that might cause memory issues
+                )
+                
+                # Prepare with smaller detection size to reduce memory usage
+                det_size = (320, 320)  # Reduced from (416, 416) to use less memory
+                self.apps[gpu_id].prepare(
+                    ctx_id=gpu_id if torch.cuda.is_available() and gpu_id < torch.cuda.device_count() else -1,
+                    det_size=det_size,
+                    det_thresh=DET_THRESH
+                )
+                log_message(f"[INSIGHTFACE] Successfully initialized for GPU {gpu_id}")
+                
+            except Exception as e:
+                log_message(f"[INSIGHTFACE ERROR] Failed to initialize GPU {gpu_id}: {e}")
+                # Fallback to CPU-only mode
+                try:
+                    self.apps[gpu_id] = FaceAnalysis(
+                        name='antelopev2',
+                        providers=['CPUExecutionProvider'],
+                        allowed_modules=['detection', 'recognition'],
+                        download=False
+                    )
+                    self.apps[gpu_id].prepare(ctx_id=-1, det_size=(320, 320), det_thresh=DET_THRESH)
+                    log_message(f"[INSIGHTFACE] Fallback to CPU mode for GPU {gpu_id}")
+                except Exception as fallback_error:
+                    log_message(f"[INSIGHTFACE CRITICAL] Failed to initialize even in CPU mode: {fallback_error}")
+                    # Skip this GPU if both GPU and CPU initialization fail
+                    continue
 
     def _initialize_cameras(self):
         # Load camera configurations from database
-        cameras = load_camera_configurations()
+        try:
+            cameras = load_camera_configurations()
+        except Exception as e:
+            log_message(f"[CAMERA WARNING] Could not load camera configurations: {e}")
+            cameras = []
+        
         for cam_config in cameras:
             cam_id = cam_config.camera_id
             self.trackers[cam_id] = BYTETracker(

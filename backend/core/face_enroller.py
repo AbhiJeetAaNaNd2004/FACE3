@@ -4,6 +4,15 @@ import numpy as np
 import logging
 from datetime import datetime
 from typing import List, Union, Optional
+
+# Configure PyTorch memory settings before importing insightface
+import torch
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    torch.cuda.set_per_process_memory_fraction(0.7)
+torch.set_num_threads(1)
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 from insightface.app import FaceAnalysis
 from db.db_manager import DatabaseManager
 from db.db_models import FaceEmbedding
@@ -27,9 +36,35 @@ class FaceEnroller:
     def __init__(self, tracking_system=None):
         self.db_manager = DatabaseManager()
         self.tracking_system = tracking_system
-        self.face_app = FaceAnalysis(name='antelopev2',
-                                     providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        self.face_app.prepare(ctx_id=0, det_size=(416, 416))
+        
+        # Initialize FaceAnalysis with conservative memory settings
+        try:
+            providers = ['CPUExecutionProvider']
+            if torch.cuda.is_available():
+                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            
+            self.face_app = FaceAnalysis(
+                name='antelopev2',
+                providers=providers,
+                allowed_modules=['detection', 'recognition'],
+                download=False  # Prevent automatic downloads
+            )
+            
+            # Use smaller detection size to reduce memory usage
+            ctx_id = 0 if torch.cuda.is_available() else -1
+            self.face_app.prepare(ctx_id=ctx_id, det_size=(320, 320))
+            
+        except Exception as e:
+            # Fallback to CPU-only mode
+            self.logger.warning(f"GPU initialization failed, falling back to CPU: {e}")
+            self.face_app = FaceAnalysis(
+                name='antelopev2',
+                providers=['CPUExecutionProvider'],
+                allowed_modules=['detection', 'recognition'],
+                download=False
+            )
+            self.face_app.prepare(ctx_id=-1, det_size=(320, 320))
+        
         self.logger = logging.getLogger(__name__)
         if not self.logger.handlers:
             logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
