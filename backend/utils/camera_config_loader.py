@@ -31,13 +31,6 @@ class CameraConfig:
     tripwires: List[TripwireConfig]
     resolution: tuple
     fps: int
-    # Optional fields for compatibility
-    camera_name: Optional[str] = None
-    ip_address: Optional[str] = None
-    stream_url: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    is_active: bool = True
 
 class CameraConfigLoader:
     """
@@ -132,40 +125,26 @@ class CameraConfigLoader:
             # Get tripwires for this camera
             db_tripwires = self.db_manager.get_camera_tripwires(db_camera.camera_id)
             
-            # Convert tripwires
+            # Convert tripwires - only include active ones
             tripwires = []
             for db_tripwire in db_tripwires:
-                if db_tripwire.is_active:  # Only include active tripwires
+                if getattr(db_tripwire, 'is_active', True):  # Default to True if field doesn't exist
                     tripwire = TripwireConfig(
                         position=db_tripwire.position,
                         spacing=db_tripwire.spacing,
                         direction=db_tripwire.direction,
-                        name=db_tripwire.name,
-                        detection_type=db_tripwire.detection_type,
-                        is_active=db_tripwire.is_active
+                        name=db_tripwire.name
                     )
                     tripwires.append(tripwire)
             
-            # Build stream URL if not provided but IP address is available
-            stream_url = db_camera.stream_url
-            if not stream_url and db_camera.ip_address:
-                # Default RTSP stream URL for IP cameras
-                stream_url = f"rtsp://{db_camera.ip_address}:554/stream1"
-            
-            # Create FTS camera configuration
+            # Create FTS camera configuration with only essential fields
             camera_config = CameraConfig(
                 camera_id=db_camera.camera_id,
                 gpu_id=db_camera.gpu_id,
                 camera_type=db_camera.camera_type,
                 tripwires=tripwires,
                 resolution=(db_camera.resolution_width, db_camera.resolution_height),
-                fps=db_camera.fps,
-                camera_name=db_camera.camera_name,
-                ip_address=db_camera.ip_address,
-                stream_url=stream_url,
-                username=db_camera.username,
-                password=db_camera.password,
-                is_active=db_camera.is_active
+                fps=db_camera.fps
             )
             
             return camera_config

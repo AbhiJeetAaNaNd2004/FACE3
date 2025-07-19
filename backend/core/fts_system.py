@@ -172,20 +172,14 @@ def load_camera_configurations() -> List[CameraConfig]:
                 )
                 tripwires.append(tripwire)
             
-            # Create FTS camera config
+            # Create FTS camera config with essential fields only
             camera_config = CameraConfig(
                 camera_id=db_config.camera_id,
                 gpu_id=db_config.gpu_id,
                 camera_type=db_config.camera_type,
                 tripwires=tripwires,
                 resolution=db_config.resolution,
-                fps=db_config.fps,
-                camera_name=getattr(db_config, 'camera_name', f"Camera {db_config.camera_id}"),
-                ip_address=getattr(db_config, 'ip_address', None),
-                stream_url=getattr(db_config, 'stream_url', None),
-                username=getattr(db_config, 'username', None),
-                password=getattr(db_config, 'password', None),
-                is_active=getattr(db_config, 'is_active', True)
+                fps=db_config.fps
             )
             
             cameras.append(camera_config)
@@ -201,13 +195,7 @@ def load_camera_configurations() -> List[CameraConfig]:
                     tripwires=[
                         TripwireConfig(position=0.755551, spacing=0.01, direction="horizontal", name="EntryDetection")],
                     resolution=detected_cam.resolution,
-                    fps=detected_cam.fps,
-                    camera_name=getattr(detected_cam, 'name', f"Camera {detected_cam.camera_id}"),
-                    ip_address=getattr(detected_cam, 'ip_address', None),
-                    stream_url=getattr(detected_cam, 'stream_url', None),
-                    username=getattr(detected_cam, 'username', None),
-                    password=getattr(detected_cam, 'password', None),
-                    is_active=True
+                    fps=detected_cam.fps
                 )
                 
                 cameras.append(camera_config)
@@ -1424,19 +1412,9 @@ class FaceTrackingSystem:
                 cv2.putText(frame, tripwire.name, (10, tripwire1_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
     def process_camera(self, camera_config: CameraConfig):
-        # Try to determine camera source - could be camera ID, IP address, or stream URL
+        # For LAN cameras, use camera_id directly as the source (0, 1, 2, etc.)
         camera_source = camera_config.camera_id
-        
-        # If we have a stream URL from the database config, use it
-        if hasattr(camera_config, 'stream_url') and camera_config.stream_url:
-            camera_source = camera_config.stream_url
-            log_message(f"[Camera {camera_config.camera_id}] Using stream URL: {camera_source}")
-        elif hasattr(camera_config, 'ip_address') and camera_config.ip_address:
-            # Try to construct RTSP URL from IP address
-            camera_source = f"rtsp://{camera_config.ip_address}:554/stream1"
-            log_message(f"[Camera {camera_config.camera_id}] Using constructed RTSP URL: {camera_source}")
-        else:
-            log_message(f"[Camera {camera_config.camera_id}] Using camera ID: {camera_source}")
+        log_message(f"[Camera {camera_config.camera_id}] Using camera ID as source: {camera_source}")
         
         cap = cv2.VideoCapture(camera_source)
         if not cap.isOpened():
