@@ -98,8 +98,7 @@ export const DashboardLayout: React.FC = () => {
       items.push(
         { name: 'Dashboard', href: '/admin', icon: HomeIcon },
         { name: 'Employee Management', href: '/admin/employees', icon: UsersIcon },
-        { name: 'Attendance', href: '/admin/attendance', icon: ClockIcon },
-        { name: 'Camera Management', href: '/admin/cameras', icon: CameraIcon },
+        { name: 'Attendance Dashboard', href: '/admin/attendance', icon: ClockIcon },
         { name: 'Live Monitor', href: '/admin/monitor', icon: CameraIcon },
       );
     } else if (hasRole(user, UserRole.EMPLOYEE)) {

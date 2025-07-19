@@ -90,11 +90,11 @@ async def discover_cameras(
 async def get_cameras(
     status_filter: Optional[str] = None,
     active_only: bool = False,
-    current_user: CurrentUser = Depends(require_admin_or_above)
+    current_user: CurrentUser = Depends(require_super_admin)
 ):
     """
     Get list of all cameras with optional filtering
-    (Admin+ only)
+    (Super Admin only)
     """
     try:
         db_manager = DatabaseManager()
@@ -165,11 +165,11 @@ async def get_cameras(
 @router.get("/{camera_id}", response_model=CameraInfo)
 async def get_camera(
     camera_id: int,
-    current_user: CurrentUser = Depends(require_admin_or_above)
+    current_user: CurrentUser = Depends(require_super_admin)
 ):
     """
     Get detailed information about a specific camera
-    (Admin+ only)
+    (Super Admin only)
     """
     try:
         db_manager = DatabaseManager()
@@ -510,11 +510,11 @@ async def delete_camera(
 @router.get("/{camera_id}/status", response_model=CameraStatusResponse)
 async def get_camera_status(
     camera_id: int,
-    current_user: CurrentUser = Depends(require_admin_or_above)
+    current_user: CurrentUser = Depends(require_super_admin)
 ):
     """
     Get real-time status of a camera
-    (Admin+ only)
+    (Super Admin only)
     """
     try:
         db_manager = DatabaseManager()
@@ -594,11 +594,11 @@ async def create_tripwire(
 @router.get("/{camera_id}/tripwires", response_model=List[Tripwire])
 async def get_camera_tripwires(
     camera_id: int,
-    current_user: CurrentUser = Depends(require_admin_or_above)
+    current_user: CurrentUser = Depends(require_super_admin)
 ):
     """
     Get all tripwires for a camera
-    (Admin+ only)
+    (Super Admin only)
     """
     try:
         db_manager = DatabaseManager()

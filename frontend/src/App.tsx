@@ -185,14 +185,6 @@ function App() {
               }
             />
             <Route
-              path="/admin/cameras"
-              element={
-                <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                  <CameraManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/admin/monitor"
               element={
                 <ProtectedRoute requiredRole={UserRole.ADMIN}>
