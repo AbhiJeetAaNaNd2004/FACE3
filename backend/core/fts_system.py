@@ -35,6 +35,7 @@ from db.db_manager import DatabaseManager
 from db.db_config import create_tables
 from db.db_models import Employee, FaceEmbedding, AttendanceLog
 from utils.camera_config_loader import load_active_camera_configs, CameraConfig as DBCameraConfig, TripwireConfig as DBTripwireConfig
+from utils.auto_camera_detector import get_auto_detector, DetectedCamera, start_auto_detection
 from datetime import timedelta
 
 # Global variables for Django integration
@@ -141,13 +142,20 @@ API_CONFIG = {
 
 def load_camera_configurations() -> List[CameraConfig]:
     """
-    Load camera configurations from the database
+    Load camera configurations from auto-detection and database
     
     Returns:
-        List of active camera configurations from database
+        List of all available camera configurations
     """
     try:
-        # Load active camera configurations from database
+        # First, run auto-detection to find all available cameras
+        auto_detector = get_auto_detector()
+        detected_cameras = auto_detector.detect_all_cameras()
+        
+        # Sync detected cameras to database
+        auto_detector.sync_to_database(detected_cameras)
+        
+        # Load camera configurations from database (which now includes detected cameras)
         db_camera_configs = load_active_camera_configs()
         
         # Convert to the format expected by the FTS system
@@ -182,19 +190,28 @@ def load_camera_configurations() -> List[CameraConfig]:
             camera_config.camera_name = getattr(db_config, 'camera_name', f"Camera {db_config.camera_id}")
             cameras.append(camera_config)
         
-        if not cameras:
-            # Fallback to default configuration if no cameras in database
-            log_message("No active cameras found in database, using default configuration")
-            cameras = [
-                CameraConfig(
-                    camera_id=0,
+        # If no cameras found in database, try to create from detected cameras
+        if not cameras and detected_cameras:
+            log_message("Creating FTS configs from detected cameras")
+            for detected_cam in detected_cameras:
+                camera_config = CameraConfig(
+                    camera_id=detected_cam.camera_id,
                     gpu_id=0,
                     camera_type="entry",
                     tripwires=[
                         TripwireConfig(position=0.755551, spacing=0.01, direction="horizontal", name="EntryDetection")],
-                    resolution=(1280, 720),
-                    fps=15)
-            ]
+                    resolution=detected_cam.resolution,
+                    fps=detected_cam.fps
+                )
+                
+                # Add detected camera specific fields
+                camera_config.stream_url = detected_cam.stream_url
+                camera_config.ip_address = detected_cam.ip_address
+                camera_config.username = detected_cam.username
+                camera_config.password = detected_cam.password
+                camera_config.camera_name = detected_cam.name
+                camera_config.source = detected_cam.source
+                cameras.append(camera_config)
         
         log_message(f"Loaded {len(cameras)} camera configurations from database")
         return cameras
@@ -512,6 +529,11 @@ class FaceTrackingSystem:
         self.max_updates_before_rebuild = 20
         self.db_manager = DatabaseManager()
         create_tables()
+        
+        # Start auto camera detection
+        log_message("[INIT] Starting automatic camera detection...")
+        start_auto_detection(interval=300)  # Auto-detect every 5 minutes
+        
         self.embedding_update_worker = threading.Thread(target=self._embedding_update_worker, daemon=True)
         self.embedding_update_worker.start()
         if self.enable_csv_backup:

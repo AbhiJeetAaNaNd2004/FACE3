@@ -38,6 +38,8 @@ A comprehensive face recognition-based attendance tracking system with real-time
 - **Live Monitoring** - Real-time camera feeds with detection overlays
 
 ### 🔧 Technical Features
+- **Automatic Camera Detection** - Auto-detects all connected cameras (USB, built-in, IP)
+- **FTS-Processed Streaming** - All camera feeds processed through Face Tracking System
 - **ONVIF Camera Discovery** - Automatic network camera detection
 - **Tripwire Detection** - Configurable entry/exit zones
 - **WebSocket Support** - Real-time activity updates
