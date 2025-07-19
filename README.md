@@ -41,7 +41,7 @@ A comprehensive face recognition-based attendance tracking system with real-time
 - **ONVIF Camera Discovery** - Automatic network camera detection
 - **Tripwire Detection** - Configurable entry/exit zones
 - **WebSocket Support** - Real-time activity updates
-- **Database Management** - SQLite/PostgreSQL with SQLAlchemy ORM
+- **Database Management** - PostgreSQL with SQLAlchemy ORM
 - **JWT Authentication** - Secure token-based authentication
 - **Docker Support** - Containerized deployment option
 
@@ -77,7 +77,7 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 cd frontend && npm install && cd ..
 
-# 4. Setup database (PostgreSQL only - no SQLite)
+# 4. Setup database (PostgreSQL)
 python setup_postgresql.py  # Creates PostgreSQL database
 python backend/init_db.py   # Initializes tables and sample data
 
@@ -135,7 +135,7 @@ Employee:    john.doe / john123
 - **RAM**: 16GB+ for multiple cameras
 - **GPU**: NVIDIA GPU for accelerated processing
 - **CPU**: Multi-core processor (Intel i5/AMD Ryzen 5+)
-- **Database**: PostgreSQL 12+ (recommended over SQLite)
+- **Database**: PostgreSQL 12+
 
 ### Software Dependencies
 ```bash
@@ -226,8 +226,7 @@ DB_NAME=frs_db
 DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
-# Alternative: SQLite (for development)
-# DATABASE_URL=sqlite:///./backend/frs.db
+
 
 # JWT & Security Configuration
 SECRET_KEY=your-secret-key-change-in-production-2024
@@ -353,7 +352,7 @@ IMAGE_INLINE_SIZE_LIMIT=10000
 
 ## 🗄️ Database Setup
 
-> **⚠️ Important Note:** This system uses **PostgreSQL only**. SQLite is not supported and has been removed. Docker deployment is not currently supported - use direct installation only.
+> **⚠️ Important Note:** This system uses **PostgreSQL** as the database. Docker deployment is not currently supported - use direct installation only.
 
 ### PostgreSQL Setup (Required)
 
@@ -387,15 +386,6 @@ python setup_postgresql.py
 
 # Initialize database with sample data
 python backend/init_db.py
-```
-
-### SQLite Setup (Alternative)
-
-For development or testing, you can use SQLite:
-
-```env
-# In your .env file
-DATABASE_URL=sqlite:///./backend/frs.db
 ```
 
 ### Database Schema
@@ -1294,7 +1284,7 @@ curl http://localhost:8000/system/status
 
 ### 🚫 What NOT to Use
 
-- ❌ **SQLite** - Removed, use PostgreSQL only
+
 - ❌ **Docker** - Not supported currently
 - ❌ **Multiple workers with FTS** - Causes memory conflicts
 - ❌ **Standard startup if having memory issues** - Use `start_system_fixed.py`
