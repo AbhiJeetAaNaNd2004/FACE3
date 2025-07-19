@@ -100,27 +100,30 @@ class TrackingRecord(Base):
 class CameraConfig(Base):
     __tablename__ = 'camera_configs'
     
+    # Essential fields for LAN camera operation
     id = Column(Integer, primary_key=True, index=True)
-    camera_id = Column(Integer, unique=True, nullable=False)
-    camera_name = Column(String, nullable=False)
+    camera_id = Column(Integer, unique=True, nullable=False)  # Used as camera source (0, 1, 2, etc.)
     camera_type = Column(String, default='entry')  # 'entry', 'exit', 'general'
-    ip_address = Column(String, nullable=True)  # Camera IP address
-    stream_url = Column(String, nullable=True)  # RTSP/HTTP stream URL
-    username = Column(String, nullable=True)  # Camera authentication
-    password = Column(String, nullable=True)  # Camera authentication
     resolution_width = Column(Integer, default=1920)
     resolution_height = Column(Integer, default=1080)
     fps = Column(Integer, default=30)
     gpu_id = Column(Integer, default=0)  # GPU assignment for processing
-    status = Column(String, default='discovered')  # 'discovered', 'configured', 'active', 'inactive'
     is_active = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Optional fields - only needed for network cameras or advanced features
+    camera_name = Column(String, nullable=True)  # Display name (optional)
+    ip_address = Column(String, nullable=True)  # Only for network cameras
+    stream_url = Column(String, nullable=True)  # Only for network cameras
+    username = Column(String, nullable=True)  # Only for authenticated cameras
+    password = Column(String, nullable=True)  # Only for authenticated cameras
+    status = Column(String, default='active')  # Status tracking (optional)
     location_description = Column(String, nullable=True)  # Human-readable location
     manufacturer = Column(String, nullable=True)  # Camera manufacturer
     model = Column(String, nullable=True)  # Camera model
     firmware_version = Column(String, nullable=True)  # Camera firmware
     onvif_supported = Column(Boolean, default=False)  # ONVIF support flag
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # Relationships
     tripwires = relationship("Tripwire", back_populates="camera", cascade="all, delete-orphan")
@@ -128,16 +131,19 @@ class CameraConfig(Base):
 class Tripwire(Base):
     __tablename__ = 'tripwires'
     
+    # Essential fields for tripwire detection
     id = Column(Integer, primary_key=True, index=True)
     camera_id = Column(Integer, ForeignKey('camera_configs.camera_id'), nullable=False)
     name = Column(String, nullable=False)  # Tripwire name/identifier
     position = Column(Float, nullable=False)  # Position (0.0 to 1.0)
     spacing = Column(Float, default=0.01)  # Spacing for detection
     direction = Column(String, nullable=False)  # 'horizontal', 'vertical'
-    detection_type = Column(String, default='entry')  # 'entry', 'exit', 'counting'
-    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Optional fields for advanced features
+    detection_type = Column(String, default='entry')  # 'entry', 'exit', 'counting'
+    is_active = Column(Boolean, default=True)  # Allow disabling tripwires
     
     # Relationships
     camera = relationship("CameraConfig", back_populates="tripwires")

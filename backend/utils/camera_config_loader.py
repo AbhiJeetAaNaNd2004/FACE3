@@ -28,15 +28,11 @@ class CameraConfig:
     camera_id: int
     gpu_id: int
     camera_type: str
-    camera_name: str
-    ip_address: str
-    stream_url: str
-    username: Optional[str]
-    password: Optional[str]
     tripwires: List[TripwireConfig]
     resolution: tuple
     fps: int
-    is_active: bool = True
+    # Optional field for admin convenience
+    camera_name: Optional[str] = None
 
 class CameraConfigLoader:
     """
@@ -128,48 +124,30 @@ class CameraConfigLoader:
             FTS camera configuration or None if conversion fails
         """
         try:
-            # Skip cameras without valid IP address for FTS system
-            if not db_camera.ip_address:
-                logger.warning(f"Skipping camera {db_camera.camera_id} - no IP address configured")
-                return None
-                
             # Get tripwires for this camera
             db_tripwires = self.db_manager.get_camera_tripwires(db_camera.camera_id)
             
-            # Convert tripwires
+            # Convert tripwires - only include active ones
             tripwires = []
             for db_tripwire in db_tripwires:
-                if db_tripwire.is_active:  # Only include active tripwires
+                if getattr(db_tripwire, 'is_active', True):  # Default to True if field doesn't exist
                     tripwire = TripwireConfig(
                         position=db_tripwire.position,
                         spacing=db_tripwire.spacing,
                         direction=db_tripwire.direction,
-                        name=db_tripwire.name,
-                        detection_type=db_tripwire.detection_type,
-                        is_active=db_tripwire.is_active
+                        name=db_tripwire.name
                     )
                     tripwires.append(tripwire)
             
-            # Build stream URL if not provided
-            stream_url = db_camera.stream_url
-            if not stream_url and db_camera.ip_address:
-                # Default RTSP stream URL
-                stream_url = f"rtsp://{db_camera.ip_address}:554/stream1"
-            
-            # Create FTS camera configuration
+            # Create FTS camera configuration with only essential fields
             camera_config = CameraConfig(
                 camera_id=db_camera.camera_id,
                 gpu_id=db_camera.gpu_id,
                 camera_type=db_camera.camera_type,
-                camera_name=db_camera.camera_name,
-                ip_address=db_camera.ip_address,
-                stream_url=stream_url,
-                username=db_camera.username,
-                password=db_camera.password,
                 tripwires=tripwires,
                 resolution=(db_camera.resolution_width, db_camera.resolution_height),
                 fps=db_camera.fps,
-                is_active=db_camera.is_active
+                camera_name=db_camera.camera_name or f"Camera {db_camera.camera_id}"
             )
             
             return camera_config
@@ -177,34 +155,7 @@ class CameraConfigLoader:
         except Exception as e:
             logger.error(f"Error converting database camera {db_camera.camera_id}: {e}")
             return None
-    
-    def get_camera_stream_url(self, camera_id: int) -> Optional[str]:
-        """
-        Get the stream URL for a specific camera
-        
-        Args:
-            camera_id: Camera ID
-            
-        Returns:
-            Stream URL or None if not found
-        """
-        try:
-            db_camera = self.db_manager.get_camera(camera_id)
-            if not db_camera:
-                return None
-            
-            if db_camera.stream_url:
-                return db_camera.stream_url
-            elif db_camera.ip_address:
-                # Default RTSP stream URL
-                return f"rtsp://{db_camera.ip_address}:554/stream1"
-            else:
-                return None
-                
-        except Exception as e:
-            logger.error(f"Error getting stream URL for camera {camera_id}: {e}")
-            return None
-    
+
     def refresh_camera_configs(self) -> List[CameraConfig]:
         """
         Refresh and reload all active camera configurations
@@ -231,14 +182,6 @@ class CameraConfigLoader:
                 logger.error(f"Camera config missing camera_id")
                 return False
             
-            if not camera_config.camera_name:
-                logger.error(f"Camera {camera_config.camera_id} missing camera_name")
-                return False
-            
-            if not camera_config.stream_url and not camera_config.ip_address:
-                logger.error(f"Camera {camera_config.camera_id} missing stream_url and ip_address")
-                return False
-            
             # Validate resolution
             if not camera_config.resolution or len(camera_config.resolution) != 2:
                 logger.error(f"Camera {camera_config.camera_id} has invalid resolution")
@@ -247,6 +190,17 @@ class CameraConfigLoader:
             # Validate FPS
             if camera_config.fps <= 0:
                 logger.error(f"Camera {camera_config.camera_id} has invalid fps: {camera_config.fps}")
+                return False
+            
+            # Validate GPU ID
+            if camera_config.gpu_id < 0:
+                logger.error(f"Camera {camera_config.camera_id} has invalid gpu_id: {camera_config.gpu_id}")
+                return False
+            
+            # Validate camera type
+            valid_types = ['entry', 'exit', 'general']
+            if camera_config.camera_type not in valid_types:
+                logger.error(f"Camera {camera_config.camera_id} has invalid camera_type: {camera_config.camera_type}")
                 return False
             
             # Validate tripwires
@@ -262,7 +216,7 @@ class CameraConfigLoader:
             return True
             
         except Exception as e:
-            logger.error(f"Error validating camera config {camera_config.camera_id}: {e}")
+            logger.error(f"Error validating camera config: {e}")
             return False
 
 # Convenience functions

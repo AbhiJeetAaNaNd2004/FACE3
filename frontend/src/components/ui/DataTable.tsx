@@ -49,13 +49,16 @@ export function DataTable<T>({
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Ensure data is never null/undefined
+  const safeData = data || [];
+
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = data;
+    let filtered = safeData;
 
     // Apply search filter
     if (searchTerm && searchable) {
-      filtered = data.filter(item =>
+      filtered = safeData.filter(item =>
         columns.some(column => {
           const value = item[column.key as keyof T];
           return String(value).toLowerCase().includes(searchTerm.toLowerCase());
@@ -78,7 +81,7 @@ export function DataTable<T>({
     }
 
     return filtered;
-  }, [data, searchTerm, sortColumn, sortDirection, columns, searchable]);
+  }, [safeData, searchTerm, sortColumn, sortDirection, columns, searchable]);
 
   const handleSort = (columnKey: string, sortable?: boolean) => {
     if (!sortable) return;
@@ -208,7 +211,7 @@ export function DataTable<T>({
         <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {processedData.length} of {data.length} results
+              Showing {processedData.length} of {safeData.length} results
               {searchTerm && ` for "${searchTerm}"`}
             </div>
           </div>

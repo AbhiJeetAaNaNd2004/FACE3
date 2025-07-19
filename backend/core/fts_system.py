@@ -81,6 +81,7 @@ class CameraConfig:
     tripwires: List[TripwireConfig]
     resolution: tuple
     fps: int
+    camera_name: Optional[str] = None
 
 @dataclass
 class GlobalTrack:
@@ -172,22 +173,17 @@ def load_camera_configurations() -> List[CameraConfig]:
                 )
                 tripwires.append(tripwire)
             
-            # Create FTS camera config with additional fields
+            # Create FTS camera config with essential fields only
             camera_config = CameraConfig(
                 camera_id=db_config.camera_id,
                 gpu_id=db_config.gpu_id,
                 camera_type=db_config.camera_type,
                 tripwires=tripwires,
                 resolution=db_config.resolution,
-                fps=db_config.fps
+                fps=db_config.fps,
+                camera_name=getattr(db_config, 'camera_name', None) or f"Camera {db_config.camera_id}"
             )
             
-            # Add additional fields that may be needed for camera access
-            camera_config.stream_url = getattr(db_config, 'stream_url', None)
-            camera_config.ip_address = getattr(db_config, 'ip_address', None)
-            camera_config.username = getattr(db_config, 'username', None)
-            camera_config.password = getattr(db_config, 'password', None)
-            camera_config.camera_name = getattr(db_config, 'camera_name', f"Camera {db_config.camera_id}")
             cameras.append(camera_config)
         
         # If no cameras found in database, try to create from detected cameras
@@ -201,16 +197,10 @@ def load_camera_configurations() -> List[CameraConfig]:
                     tripwires=[
                         TripwireConfig(position=0.755551, spacing=0.01, direction="horizontal", name="EntryDetection")],
                     resolution=detected_cam.resolution,
-                    fps=detected_cam.fps
+                    fps=detected_cam.fps,
+                    camera_name=getattr(detected_cam, 'name', f"Camera {detected_cam.camera_id}")
                 )
                 
-                # Add detected camera specific fields
-                camera_config.stream_url = detected_cam.stream_url
-                camera_config.ip_address = detected_cam.ip_address
-                camera_config.username = detected_cam.username
-                camera_config.password = detected_cam.password
-                camera_config.camera_name = detected_cam.name
-                camera_config.source = detected_cam.source
                 cameras.append(camera_config)
         
         log_message(f"Loaded {len(cameras)} camera configurations from database")
@@ -1425,19 +1415,9 @@ class FaceTrackingSystem:
                 cv2.putText(frame, tripwire.name, (10, tripwire1_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
     def process_camera(self, camera_config: CameraConfig):
-        # Try to determine camera source - could be camera ID, IP address, or stream URL
+        # For LAN cameras, use camera_id directly as the source (0, 1, 2, etc.)
         camera_source = camera_config.camera_id
-        
-        # If we have a stream URL from the database config, use it
-        if hasattr(camera_config, 'stream_url') and camera_config.stream_url:
-            camera_source = camera_config.stream_url
-            log_message(f"[Camera {camera_config.camera_id}] Using stream URL: {camera_source}")
-        elif hasattr(camera_config, 'ip_address') and camera_config.ip_address:
-            # Try to construct RTSP URL from IP address
-            camera_source = f"rtsp://{camera_config.ip_address}:554/stream1"
-            log_message(f"[Camera {camera_config.camera_id}] Using constructed RTSP URL: {camera_source}")
-        else:
-            log_message(f"[Camera {camera_config.camera_id}] Using camera ID: {camera_source}")
+        log_message(f"[Camera {camera_config.camera_id}] Using camera ID as source: {camera_source}")
         
         cap = cv2.VideoCapture(camera_source)
         if not cap.isOpened():

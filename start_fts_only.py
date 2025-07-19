@@ -9,6 +9,7 @@ import sys
 import time
 import signal
 import threading
+import asyncio
 from pathlib import Path
 
 def setup_environment():
@@ -141,7 +142,7 @@ def check_cameras():
         if cameras:
             print(f"✅ Found {len(cameras)} configured camera(s)")
             for cam in cameras:
-                print(f"   • Camera {cam.camera_id}: {cam.camera_name}")
+                print(f"   • Camera {cam.camera_id}: {cam.camera_name} ({cam.camera_type})")
         else:
             print("⚠️ No cameras configured")
             print("💡 Configure cameras through the web interface first")
@@ -152,9 +153,49 @@ def check_cameras():
         print(f"⚠️ Could not check camera configuration: {e}")
         return True  # Continue anyway
 
+def run_camera_detection():
+    """Run automatic camera detection and configuration"""
+    try:
+        backend_path = Path(__file__).parent / "backend"
+        sys.path.insert(0, str(backend_path))
+        os.chdir(backend_path)
+        
+        from utils.auto_camera_detector import AutoCameraDetector
+        
+        async def detect_cameras():
+            detector = AutoCameraDetector()
+            cameras = await detector.detect_all_cameras()
+            return cameras
+        
+        # Run camera detection
+        cameras = asyncio.run(detect_cameras())
+        
+        if cameras:
+            print(f"✅ Detected and configured {len(cameras)} cameras:")
+            for camera in cameras:
+                print(f"   • Camera {camera.camera_id}: {camera.name}")
+                print(f"     Default tripwire: EntryDetection at position 0.5")
+        else:
+            print("⚠️  No cameras detected")
+            print("💡 Cameras can be added manually through the admin interface")
+        
+    except Exception as e:
+        print(f"❌ Error during camera detection: {e}")
+        print("💡 Cameras can be added manually through the admin interface")
+
 def main():
     print("🎯 Face Recognition System - Face Tracking System Only")
     print("=" * 60)
+    
+    # Parse command line arguments first
+    import argparse
+    parser = argparse.ArgumentParser(description="Start Face Tracking System Only")
+    parser.add_argument("--no-camera-check", action="store_true", 
+                       help="Skip camera configuration check")
+    parser.add_argument("--auto-detect-cameras", action="store_true",
+                       help="Automatically detect and configure cameras before starting FTS")
+    
+    args = parser.parse_args()
     
     # Check requirements
     if not check_requirements():
@@ -162,25 +203,24 @@ def main():
     
     print()
     
+    # Auto-detect cameras if requested
+    if args.auto_detect_cameras:
+        print("🔍 Auto-detecting cameras...")
+        run_camera_detection()
+        print()
+    
     # Check cameras
-    check_cameras()
-    print()
+    if not args.no_camera_check:
+        check_cameras()
+        print()
     
     # Set up environment
     setup_environment()
     print()
     
-    # Parse command line arguments
-    import argparse
-    parser = argparse.ArgumentParser(description="Start Face Tracking System Only")
-    parser.add_argument("--no-camera-check", action="store_true", 
-                       help="Skip camera configuration check")
-    
-    args = parser.parse_args()
-    
-    if not args.no_camera_check:
+    if not args.no_camera_check and not args.auto_detect_cameras:
         print("💡 Note: Make sure cameras are configured in the database")
-        print("   Use the web interface or backend API to configure cameras first")
+        print("   Use --auto-detect-cameras or the web interface to configure cameras")
         print("")
     
     # Start FTS

@@ -201,12 +201,19 @@ class DatabaseManager:
         try:
             session = self.Session()
             
-            # Get the next available camera_id
-            max_camera_id = session.query(func.max(CameraConfig.camera_id)).scalar()
-            next_camera_id = (max_camera_id + 1) if max_camera_id is not None else 1
+            # Use provided camera_id if specified, otherwise get the next available camera_id
+            if 'camera_id' in camera_data and camera_data['camera_id'] is not None:
+                camera_id = camera_data['camera_id']
+                # Check if this camera_id is already taken
+                existing = session.query(CameraConfig).filter(CameraConfig.camera_id == camera_id).first()
+                if existing:
+                    raise ValueError(f"Camera ID {camera_id} already exists")
+            else:
+                max_camera_id = session.query(func.max(CameraConfig.camera_id)).scalar()
+                camera_id = (max_camera_id + 1) if max_camera_id is not None else 0
             
             camera = CameraConfig(
-                camera_id=next_camera_id,
+                camera_id=camera_id,
                 camera_name=camera_data['camera_name'],
                 camera_type=camera_data.get('camera_type', 'general'),
                 ip_address=camera_data.get('ip_address'),
