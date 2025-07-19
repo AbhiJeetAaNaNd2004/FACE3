@@ -35,10 +35,11 @@ def check_database_connection():
         
         from app.config import settings
         from db.db_config import engine
+        from sqlalchemy import text
         
         # Test connection
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         
         print("✅ Database connection successful")
         return True

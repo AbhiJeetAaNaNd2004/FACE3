@@ -12,7 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))  # root
 # Import the Base from our models
 from .db_models import Base
 
-# PostgreSQL configuration only - no SQLite support
+# Database configuration - supports both PostgreSQL and SQLite
 DATABASE_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': os.getenv('DB_PORT', '5432'),
@@ -21,20 +21,30 @@ DATABASE_CONFIG = {
     'password': os.getenv('DB_PASSWORD', 'password')
 }
 
-DATABASE_URL = f"postgresql://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+# Check if DATABASE_URL is set in environment, otherwise use PostgreSQL config
+DATABASE_URL = os.getenv('DATABASE_URL', f"postgresql://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}")
 
-# Create engine with PostgreSQL settings
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo=False,
-    connect_args={
-        "options": "-c timezone=utc"
-    }
-)
+# Create engine with appropriate settings based on database type
+if DATABASE_URL.startswith('sqlite'):
+    # SQLite configuration
+    engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    # PostgreSQL configuration
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        echo=False,
+        connect_args={
+            "options": "-c timezone=utc"
+        }
+    )
 
 # Create sessionmaker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

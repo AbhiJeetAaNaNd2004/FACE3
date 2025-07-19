@@ -21,6 +21,7 @@ import os
 from app.config import settings
 from app.routers import auth, employees, departments, attendance, cameras, embeddings, streaming, system
 from db.db_manager import DatabaseManager
+from db.db_config import create_tables
 from utils.logging import get_logger
 
 # Set up logging
@@ -105,7 +106,7 @@ async def lifespan(app: FastAPI):
     # Initialize database
     try:
         db_manager = DatabaseManager()
-        db_manager.create_tables()
+        create_tables()
         logger.info("✅ Database tables initialized")
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
