@@ -1,7 +1,7 @@
 {
   "name": "face-recognition-attendance-system",
   "version": "1.0.0",
-  "description": "Complete face recognition attendance system with FastAPI backend and React frontend",
+  "description": "Complete face recognition attendance system with FastAPI backend and React frontend. See SETUP_GUIDE.md for comprehensive setup instructions.",
   "scripts": {
     "dev": "concurrently \"python3 start_unified_server.py --reload\" \"cd frontend && npm start\"",
     "dev:backend": "python3 start_unified_server.py --reload",

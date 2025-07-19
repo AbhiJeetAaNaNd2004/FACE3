@@ -300,7 +300,33 @@ Camera system supports various input sources:
 
 ## 🎮 Starting the System
 
-### Quick Start (Recommended)
+**📋 For the complete setup guide, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md) (978 lines)**
+
+### ⚡ 5-Minute Quick Start
+```bash
+# 1. Copy environment files
+cp .env.example .env && cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env
+
+# 2. Install all dependencies
+npm run install:all
+
+# 3. Setup PostgreSQL database
+npm run setup:postgresql && npm run init:db
+
+# 4. Start both backend and frontend
+npm run dev
+```
+
+**🌐 Access:** Frontend: http://localhost:3000 | API: http://localhost:8000/docs  
+**👤 Login:** `admin` / `admin123`
+
+### 📚 Documentation Quick Links
+- **[📘 Complete Setup Guide](SETUP_GUIDE.md)** - Comprehensive setup instructions
+- **[⚡ Quick Reference](QUICK_START.md)** - Essential commands and fixes
+- **[🔧 Environment Setup](ENV_SETUP.md)** - Environment configuration
+- **[🛠️ Port Fixes](PORT_CONFLICT_FIX.md)** - Port conflict solutions
+
+### Traditional Start (Alternative)
 ```bash
 # Start both backend and frontend
 npm run dev
