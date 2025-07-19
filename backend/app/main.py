@@ -12,7 +12,7 @@ import logging
 import asyncio
 import threading
 
-from app.routers import auth, employees, attendance, embeddings, streaming, cameras
+from app.routers import auth, employees, attendance, embeddings, streaming, cameras, departments
 # from app.routers import system  # Temporarily disabled
 from app.config import settings
 from db.db_config import create_tables
@@ -147,6 +147,7 @@ app.include_router(attendance.router)
 app.include_router(embeddings.router)
 app.include_router(streaming.router)
 app.include_router(cameras.router)
+app.include_router(departments.router)
 # app.include_router(system.router)  # Temporarily disabled
 
 @app.get("/")

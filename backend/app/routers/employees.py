@@ -19,7 +19,7 @@ from app.security import (
     get_current_active_user, check_employee_access
 )
 from db.db_config import get_db
-from db.db_models import Employee as EmployeeModel, FaceEmbedding, AttendanceLog
+from db.db_models import Employee as EmployeeModel, FaceEmbedding, AttendanceLog, Department
 
 router = APIRouter(prefix="/employees", tags=["Employee Management"])
 
@@ -47,7 +47,7 @@ async def enroll_employee(
     new_employee = EmployeeModel(
         employee_id=enrollment_data.employee.employee_id,
         name=enrollment_data.employee.name,
-        department=enrollment_data.employee.department,
+        department_id=enrollment_data.employee.department_id,
         role=enrollment_data.employee.role,
         date_joined=enrollment_data.employee.date_joined,
         email=enrollment_data.employee.email,

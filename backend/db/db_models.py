@@ -6,12 +6,25 @@ import datetime
 
 Base = declarative_base()
 
+class Department(Base):
+    __tablename__ = 'departments'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    employees = relationship("Employee", back_populates="department", cascade="all, delete-orphan")
+
 class Employee(Base):
     __tablename__ = 'employees'
     
     employee_id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    department = Column(String, nullable=False)
+    department_id = Column(Integer, ForeignKey('departments.id'), nullable=False)
     role = Column(String, nullable=False)
     date_joined = Column(Date, nullable=False)
     email = Column(String, unique=True, nullable=True)
@@ -21,6 +34,7 @@ class Employee(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # Relationships
+    department = relationship("Department", back_populates="employees")
     face_embeddings = relationship("FaceEmbedding", back_populates="employee", cascade="all, delete-orphan")
     attendance_logs = relationship("AttendanceLog", back_populates="employee", cascade="all, delete-orphan")
 

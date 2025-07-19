@@ -13,7 +13,7 @@ backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
 from db.db_config import create_tables, get_db, test_connection
-from db.db_models import Employee, UserAccount, CameraConfig
+from db.db_models import Employee, UserAccount, CameraConfig, Department
 from app.security import get_password_hash
 from datetime import date
 import logging
@@ -50,7 +50,84 @@ def initialize_database():
     
     db = next(get_db())
     try:
-        # Create user accounts for all roles
+        # Create sample departments first
+        existing_dept = db.query(Department).filter(Department.name == "Engineering").first()
+        if not existing_dept:
+            departments = [
+                Department(
+                    name="Engineering",
+                    description="Software development and technical operations"
+                ),
+                Department(
+                    name="Human Resources",
+                    description="Employee management and organizational development"
+                ),
+                Department(
+                    name="Administration",
+                    description="General administration and support services"
+                )
+            ]
+            
+            for dept in departments:
+                db.add(dept)
+            
+            # Commit departments first so we can reference them
+            db.commit()
+            print("✅ Created sample departments")
+        else:
+            print("ℹ️  Sample departments already exist")
+        
+        # Get department IDs for employee creation
+        eng_dept = db.query(Department).filter(Department.name == "Engineering").first()
+        hr_dept = db.query(Department).filter(Department.name == "Human Resources").first()
+        
+        # Check if sample employees exist
+        existing_employee = db.query(Employee).filter(Employee.employee_id == "EMP001").first()
+        if not existing_employee:
+            # Create sample employees
+            employees = [
+                Employee(
+                    employee_id="EMP001",
+                    name="John Doe",
+                    department_id=eng_dept.id,
+                    role="Software Developer",
+                    date_joined=date(2023, 1, 15),
+                    email="john.doe@company.com",
+                    phone="+1234567890",
+                    is_active=True
+                ),
+                Employee(
+                    employee_id="EMP002",
+                    name="Jane Smith",
+                    department_id=hr_dept.id,
+                    role="HR Manager",
+                    date_joined=date(2023, 2, 1),
+                    email="jane.smith@company.com",
+                    phone="+1234567891",
+                    is_active=True
+                ),
+                Employee(
+                    employee_id="EMP003",
+                    name="Mike Johnson",
+                    department_id=eng_dept.id,
+                    role="Senior Developer",
+                    date_joined=date(2023, 3, 10),
+                    email="mike.johnson@company.com",
+                    phone="+1234567892",
+                    is_active=True
+                )
+            ]
+            
+            for employee in employees:
+                db.add(employee)
+            
+            # Commit employees before creating user accounts
+            db.commit()
+            print("✅ Created sample employees")
+        else:
+            print("ℹ️  Sample employees already exist")
+        
+        # Create user accounts for all roles (after employees are created)
         users_to_create = [
             {
                 "username": "admin",
@@ -98,50 +175,6 @@ def initialize_database():
             else:
                 print(f"ℹ️  User {user_data['username']} already exists")
         
-        # Check if sample employees exist
-        existing_employee = db.query(Employee).filter(Employee.employee_id == "EMP001").first()
-        if not existing_employee:
-            # Create sample employees
-            employees = [
-                Employee(
-                    employee_id="EMP001",
-                    name="John Doe",
-                    department="Engineering",
-                    role="Software Developer",
-                    date_joined=date(2023, 1, 15),
-                    email="john.doe@company.com",
-                    phone="+1234567890",
-                    is_active=True
-                ),
-                Employee(
-                    employee_id="EMP002",
-                    name="Jane Smith",
-                    department="HR",
-                    role="HR Manager",
-                    date_joined=date(2023, 2, 1),
-                    email="jane.smith@company.com",
-                    phone="+1234567891",
-                    is_active=True
-                ),
-                Employee(
-                    employee_id="EMP003",
-                    name="Mike Johnson",
-                    department="Engineering",
-                    role="Senior Developer",
-                    date_joined=date(2023, 3, 10),
-                    email="mike.johnson@company.com",
-                    phone="+1234567892",
-                    is_active=True
-                )
-            ]
-            
-            for employee in employees:
-                db.add(employee)
-            
-            print("✅ Created sample employees")
-        else:
-            print("ℹ️  Sample employees already exist")
-        
         # Check if sample camera exists
         existing_camera = db.query(CameraConfig).filter(CameraConfig.camera_id == 0).first()
         if not existing_camera:
@@ -186,6 +219,7 @@ def main():
         print("=" * 70)
         print("📋 Summary:")
         print("   • Database tables created")
+        print("   • Sample departments added")
         print("   • Sample employees added")
         print("   • Sample camera configuration added")
         print("   • User accounts created for all roles")
