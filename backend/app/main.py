@@ -14,6 +14,9 @@ from contextlib import asynccontextmanager
 from typing import List
 import jwt
 from datetime import datetime
+import asyncio
+import threading
+import os
 
 from app.config import settings
 from app.routers import auth, employees, departments, attendance, cameras, embeddings, streaming, system
@@ -51,6 +54,49 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# FTS System Integration
+fts_startup_task = None
+
+async def initialize_fts_system():
+    """Initialize the Face Tracking System in the background"""
+    try:
+        logger.info("🔄 Initializing Face Tracking System...")
+        
+        # Import FTS functions (delayed import to avoid circular dependencies)
+        from core.fts_system import start_tracking_service, is_tracking_running
+        
+        # Run the FTS initialization in a separate thread to avoid blocking
+        def start_fts():
+            try:
+                start_tracking_service()
+                logger.info("✅ Face Tracking System initialized successfully")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Face Tracking System: {e}")
+        
+        # Start FTS in background thread
+        fts_thread = threading.Thread(target=start_fts, daemon=True)
+        fts_thread.start()
+        
+        # Give it a moment to start
+        await asyncio.sleep(3)  # 3 second delay for FTS startup
+        
+    except Exception as e:
+        logger.error(f"❌ Error during FTS initialization: {e}")
+
+async def shutdown_fts_system():
+    """Shutdown the Face Tracking System gracefully"""
+    try:
+        from core.fts_system import shutdown_tracking_service, is_tracking_running
+        
+        if is_tracking_running:
+            logger.info("🔄 Shutting down Face Tracking System...")
+            shutdown_tracking_service()
+            logger.info("✅ Face Tracking System shut down successfully")
+        else:
+            logger.info("ℹ️ Face Tracking System was not running")
+    except Exception as e:
+        logger.error(f"❌ Error during FTS shutdown: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -65,12 +111,27 @@ async def lifespan(app: FastAPI):
         logger.error(f"❌ Database initialization failed: {e}")
         raise e
     
+    # Initialize Face Tracking System if auto-start is enabled
+    fts_auto_start = os.environ.get("FTS_AUTO_START", "false").lower() == "true"
+    if fts_auto_start:
+        try:
+            await initialize_fts_system()
+        except Exception as e:
+            logger.error(f"❌ FTS initialization failed but continuing with API: {e}")
+    else:
+        logger.info("⚠️ Face Tracking System auto-start is disabled")
+    
     logger.info("🎯 Face Recognition Attendance System API is ready!")
     
     yield
     
     # Shutdown
     logger.info("🛑 Shutting down Face Recognition Attendance System API")
+    
+    # Gracefully shutdown FTS system
+    if fts_auto_start:
+        await shutdown_fts_system()
+    
     logger.info("✅ Shutdown complete")
 
 # Create FastAPI app with lifespan events

@@ -17,40 +17,73 @@ from utils.logging import get_logger
 router = APIRouter(prefix="/system", tags=["System Management"])
 logger = get_logger(__name__)
 
+def get_fts_functions():
+    """Safely import and return FTS functions"""
+    try:
+        from core.fts_system import (
+            start_tracking_service, 
+            shutdown_tracking_service, 
+            get_system_status,
+            is_tracking_running,
+            get_live_faces,
+            get_attendance_data
+        )
+        return {
+            'start_tracking_service': start_tracking_service,
+            'shutdown_tracking_service': shutdown_tracking_service,
+            'get_system_status': get_system_status,
+            'is_tracking_running': is_tracking_running,
+            'get_live_faces': get_live_faces,
+            'get_attendance_data': get_attendance_data
+        }
+    except ImportError as e:
+        logger.warning(f"FTS system not available: {e}")
+        return None
+
 @router.get("/status")
-async def get_system_status(
+async def get_system_status_endpoint(
     current_user: CurrentUser = Depends(require_admin_or_above)
 ):
     """
     Get system status and statistics (Admin+ only)
     """
     try:
-        # Get basic system information
-        status_data = {
-            "timestamp": datetime.now().isoformat(),
-            "is_running": True,  # API is running if this endpoint responds
-            "fts_status": "not_initialized",  # FTS system not initialized yet
+        fts_functions = get_fts_functions()
+        
+        if fts_functions:
+            # FTS system is available
+            try:
+                fts_status = fts_functions['get_system_status']()
+                fts_status["is_running"] = fts_functions['is_tracking_running']
+                fts_status["fts_available"] = True
+            except Exception as e:
+                logger.error(f"Error getting FTS status: {e}")
+                fts_status = {
+                    "is_running": False,
+                    "fts_available": True,
+                    "error": str(e)
+                }
+        else:
+            # FTS system not available - provide basic status
+            fts_status = {
+                "timestamp": datetime.now().isoformat(),
+                "is_running": False,
+                "fts_available": False,
+                "fts_status": "not_available"
+            }
+        
+        # Add basic system information
+        fts_status.update({
             "system_info": {
                 "cpu_percent": psutil.cpu_percent(interval=1),
                 "memory_percent": psutil.virtual_memory().percent,
                 "disk_percent": psutil.disk_usage('/').percent if os.name != 'nt' else psutil.disk_usage('C:').percent,
-                "uptime": "N/A"  # Will be implemented when FTS is integrated
-            },
-            "camera_status": {
-                "total_cameras": 0,
-                "active_cameras": 0,
-                "processing_cameras": 0
-            },
-            "face_detection": {
-                "faces_detected": 0,
-                "identities_recognized": 0,
-                "unknown_faces": 0
             }
-        }
+        })
         
         return {
             "success": True,
-            "data": status_data
+            "data": fts_status
         }
     except Exception as e:
         logger.error(f"Failed to get system status: {e}")
@@ -67,12 +100,26 @@ async def start_face_detection_system(
     Start the face detection and tracking system (Admin+ only)
     """
     try:
-        logger.info(f"Face detection system start requested by user {current_user.username}")
+        fts_functions = get_fts_functions()
         
-        # For now, return a message that the system is not yet integrated
+        if not fts_functions:
+            return MessageResponse(
+                success=False,
+                message="Face detection system is not available. Please check FTS installation."
+            )
+        
+        if fts_functions['is_tracking_running']:
+            return MessageResponse(
+                success=False,
+                message="Face detection system is already running"
+            )
+        
+        fts_functions['start_tracking_service']()
+        logger.info(f"Face detection system started by user {current_user.username}")
+        
         return MessageResponse(
-            success=False,
-            message="Face detection system integration is not yet available. The API is running in basic mode."
+            success=True,
+            message="Face detection system started successfully"
         )
     except Exception as e:
         logger.error(f"Failed to start face detection system: {e}")
@@ -89,11 +136,26 @@ async def stop_face_detection_system(
     Stop the face detection and tracking system (Admin+ only)
     """
     try:
-        logger.info(f"Face detection system stop requested by user {current_user.username}")
+        fts_functions = get_fts_functions()
+        
+        if not fts_functions:
+            return MessageResponse(
+                success=False,
+                message="Face detection system is not available. Please check FTS installation."
+            )
+        
+        if not fts_functions['is_tracking_running']:
+            return MessageResponse(
+                success=False,
+                message="Face detection system is not running"
+            )
+        
+        fts_functions['shutdown_tracking_service']()
+        logger.info(f"Face detection system stopped by user {current_user.username}")
         
         return MessageResponse(
-            success=False,
-            message="Face detection system integration is not yet available. The API is running in basic mode."
+            success=True,
+            message="Face detection system stopped successfully"
         )
     except Exception as e:
         logger.error(f"Failed to stop face detection system: {e}")
@@ -102,21 +164,55 @@ async def stop_face_detection_system(
             detail=f"Failed to stop face detection system: {str(e)}"
         )
 
+@router.get("/live-faces")
+async def get_detected_faces(
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Get currently detected faces (Admin+ only)
+    """
+    try:
+        fts_functions = get_fts_functions()
+        
+        if not fts_functions:
+            return {
+                "success": False,
+                "message": "Face detection system is not available",
+                "data": []
+            }
+        
+        faces = fts_functions['get_live_faces']()
+        return {
+            "success": True,
+            "data": faces
+        }
+    except Exception as e:
+        logger.error(f"Failed to get live faces: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get live faces: {str(e)}"
+        )
+
 @router.get("/health")
 async def get_system_health():
     """
     Get basic system health information (no authentication required)
     """
     try:
+        fts_functions = get_fts_functions()
+        
         health_data = {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "services": {
                 "api": "running",
                 "database": "connected",
-                "fts": "not_initialized"
+                "fts": "available" if fts_functions else "not_available"
             }
         }
+        
+        if fts_functions:
+            health_data["services"]["fts_running"] = "running" if fts_functions['is_tracking_running'] else "stopped"
         
         return {
             "success": True,
