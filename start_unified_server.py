@@ -244,9 +244,15 @@ def main():
     )
     
     parser.add_argument(
+        "--enable-fts", 
+        action="store_true", 
+        help="Enable Face Tracking System auto-start (default: disabled for stability)"
+    )
+    
+    parser.add_argument(
         "--no-fts", 
         action="store_true", 
-        help="Disable Face Tracking System auto-start"
+        help="Disable Face Tracking System auto-start (legacy option)"
     )
     
     parser.add_argument(
@@ -282,13 +288,25 @@ def main():
             print("\n💡 Tip: Try running with --init-db to initialize the database")
             sys.exit(1)
     
+    # Determine FTS enable status
+    # Priority: --enable-fts > --no-fts > default (disabled for stability)
+    if args.enable_fts:
+        enable_fts = True
+        print("🤖 Face Tracking System will be enabled (--enable-fts)")
+    elif args.no_fts:
+        enable_fts = False
+        print("⚠️ Face Tracking System will be disabled (--no-fts)")
+    else:
+        enable_fts = False  # Default to disabled for stability
+        print("⚠️ Face Tracking System disabled by default (use --enable-fts to enable)")
+    
     # Start unified server
     start_server(
         host=args.host,
         port=args.port,
         reload=args.reload,
         workers=args.workers,
-        enable_fts=not args.no_fts,
+        enable_fts=enable_fts,
         force_kill=args.force
     )
 

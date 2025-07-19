@@ -111,7 +111,7 @@ Employee:    john.doe / john123
 | Command | Description |
 |---------|-------------|
 | `python start_system_fixed.py` | **RECOMMENDED** - Start with memory fixes |
-| `python start_unified_server.py --enable-fts` | Start with face tracking |
+| `python start_unified_server.py --enable-fts` | Start with face tracking (now explicit) |
 | `python start_backend_only.py` | Start API only (no face detection) |
 | `python start_frontend_only.py` | Start React frontend only |
 | `python start_fts_only.py` | Start Face Tracking System only |
@@ -420,7 +420,7 @@ The initialization script creates:
 
 ### Development Mode (Recommended)
 ```bash
-# Start unified server with face tracking enabled
+# Start unified server with face tracking enabled (explicit flag required)
 python start_unified_server.py --enable-fts
 
 # This includes:
@@ -449,21 +449,29 @@ python start_unified_server.py --reload
 
 ### Advanced Startup Options
 ```bash
+# Start with FTS enabled (explicit flag required for stability)
+python start_unified_server.py --enable-fts
+
 # Force start (kills conflicting processes)
 python start_unified_server.py --force
 
-# Start on different port
-python start_unified_server.py --port 8001
+# Start on different port with FTS
+python start_unified_server.py --port 8001 --enable-fts
 
 # Initialize database and start
 python start_unified_server.py --init-db
 
-# Start without Face Tracking System
+# Start without Face Tracking System (default behavior)
+python start_unified_server.py
+
+# Legacy disable flag (same as default now)
 python start_unified_server.py --no-fts
 
 # Skip pre-startup checks
 python start_unified_server.py --skip-checks
 ```
+
+> **📝 Note:** FTS is now **disabled by default** for better stability. Use `--enable-fts` to enable Face Tracking System.
 
 ### Frontend Development (Optional)
 ```bash
@@ -1270,7 +1278,10 @@ curl http://localhost:8000/system/status
    # Option A: Fixed startup (recommended for memory issues)
    python start_system_fixed.py
    
-   # Option B: Separate components for development
+   # Option B: Standard startup with FTS
+   python start_unified_server.py --enable-fts
+   
+   # Option C: Separate components for development
    python start_backend_only.py    # Terminal 1
    python start_frontend_only.py   # Terminal 2
    python start_fts_only.py        # Terminal 3 (optional)
