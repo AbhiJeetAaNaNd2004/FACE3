@@ -222,12 +222,12 @@ Create a `.env` file in the project root:
 DB_TYPE=postgresql
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=face_attendance_db
+DB_NAME=frs_db
 DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
 # Alternative: SQLite (for development)
-# DATABASE_URL=sqlite:///./backend/face_attendance.db
+# DATABASE_URL=sqlite:///./backend/frs.db
 
 # JWT & Security Configuration
 SECRET_KEY=your-secret-key-change-in-production-2024
@@ -283,7 +283,7 @@ LOG_RETENTION=30 days
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=face_attendance_db
+DB_NAME=frs_db
 DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
@@ -374,9 +374,9 @@ sudo systemctl enable postgresql
 sudo -u postgres psql
 
 # Create database and user
-CREATE DATABASE face_attendance_db;
+CREATE DATABASE frs_db;
 CREATE USER postgres WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE face_attendance_db TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE frs_db TO postgres;
 \q
 ```
 
@@ -395,7 +395,7 @@ For development or testing, you can use SQLite:
 
 ```env
 # In your .env file
-DATABASE_URL=sqlite:///./backend/face_attendance.db
+DATABASE_URL=sqlite:///./backend/frs.db
 ```
 
 ### Database Schema
@@ -917,7 +917,7 @@ python setup_postgresql.py
 python backend/init_db.py
 
 # Check database status
-psql -h localhost -U postgres -d face_attendance_db
+psql -h localhost -U postgres -d frs_db
 ```
 
 ## 🚨 Port Conflict Solutions
@@ -1128,7 +1128,7 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_DB: face_attendance_db
+      POSTGRES_DB: frs_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:

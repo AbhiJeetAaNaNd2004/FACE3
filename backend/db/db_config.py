@@ -16,7 +16,7 @@ from .db_models import Base
 DATABASE_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': os.getenv('DB_PORT', '5432'),
-    'database': os.getenv('DB_NAME', 'face_attendance_db'),
+    'database': os.getenv('DB_NAME', 'frs_db'),
     'username': os.getenv('DB_USER', 'postgres'),
     'password': os.getenv('DB_PASSWORD', 'password')
 }
