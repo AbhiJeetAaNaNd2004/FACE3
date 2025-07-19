@@ -128,6 +128,11 @@ class CameraConfigLoader:
             FTS camera configuration or None if conversion fails
         """
         try:
+            # Skip cameras without valid IP address for FTS system
+            if not db_camera.ip_address:
+                logger.warning(f"Skipping camera {db_camera.camera_id} - no IP address configured")
+                return None
+                
             # Get tripwires for this camera
             db_tripwires = self.db_manager.get_camera_tripwires(db_camera.camera_id)
             

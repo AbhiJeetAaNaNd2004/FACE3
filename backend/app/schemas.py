@@ -236,7 +236,7 @@ class CameraUpdate(BaseModel):
 class CameraInfo(CameraBase):
     id: int
     camera_id: int
-    ip_address: str
+    ip_address: Optional[str]
     stream_url: Optional[str]
     manufacturer: Optional[str]
     model: Optional[str]

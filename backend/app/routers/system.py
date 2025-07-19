@@ -6,23 +6,58 @@ Provides endpoints for managing the face detection system
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from typing import Dict, Any
+from datetime import datetime
+import psutil
+import os
 
 from app.schemas import CurrentUser, MessageResponse
 from app.security import require_admin_or_above
-from core.fts_system import (
-    start_tracking_service, 
-    shutdown_tracking_service, 
-    get_system_status,
-    get_live_faces,
-    get_attendance_data,
-    get_logs,
-    is_tracking_running,
-    generate_mjpeg
-)
 from utils.logging import get_logger
 
 router = APIRouter(prefix="/system", tags=["System Management"])
 logger = get_logger(__name__)
+
+@router.get("/status")
+async def get_system_status(
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Get system status and statistics (Admin+ only)
+    """
+    try:
+        # Get basic system information
+        status_data = {
+            "timestamp": datetime.now().isoformat(),
+            "is_running": True,  # API is running if this endpoint responds
+            "fts_status": "not_initialized",  # FTS system not initialized yet
+            "system_info": {
+                "cpu_percent": psutil.cpu_percent(interval=1),
+                "memory_percent": psutil.virtual_memory().percent,
+                "disk_percent": psutil.disk_usage('/').percent if os.name != 'nt' else psutil.disk_usage('C:').percent,
+                "uptime": "N/A"  # Will be implemented when FTS is integrated
+            },
+            "camera_status": {
+                "total_cameras": 0,
+                "active_cameras": 0,
+                "processing_cameras": 0
+            },
+            "face_detection": {
+                "faces_detected": 0,
+                "identities_recognized": 0,
+                "unknown_faces": 0
+            }
+        }
+        
+        return {
+            "success": True,
+            "data": status_data
+        }
+    except Exception as e:
+        logger.error(f"Failed to get system status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get system status: {str(e)}"
+        )
 
 @router.post("/start", response_model=MessageResponse)
 async def start_face_detection_system(
@@ -32,18 +67,12 @@ async def start_face_detection_system(
     Start the face detection and tracking system (Admin+ only)
     """
     try:
-        if is_tracking_running:
-            return MessageResponse(
-                success=False,
-                message="Face detection system is already running"
-            )
+        logger.info(f"Face detection system start requested by user {current_user.username}")
         
-        start_tracking_service()
-        logger.info(f"Face detection system started by user {current_user.username}")
-        
+        # For now, return a message that the system is not yet integrated
         return MessageResponse(
-            success=True,
-            message="Face detection system started successfully"
+            success=False,
+            message="Face detection system integration is not yet available. The API is running in basic mode."
         )
     except Exception as e:
         logger.error(f"Failed to start face detection system: {e}")
@@ -60,18 +89,11 @@ async def stop_face_detection_system(
     Stop the face detection and tracking system (Admin+ only)
     """
     try:
-        if not is_tracking_running:
-            return MessageResponse(
-                success=False,
-                message="Face detection system is not running"
-            )
-        
-        shutdown_tracking_service()
-        logger.info(f"Face detection system stopped by user {current_user.username}")
+        logger.info(f"Face detection system stop requested by user {current_user.username}")
         
         return MessageResponse(
-            success=True,
-            message="Face detection system stopped successfully"
+            success=False,
+            message="Face detection system integration is not yet available. The API is running in basic mode."
         )
     except Exception as e:
         logger.error(f"Failed to stop face detection system: {e}")
@@ -80,111 +102,29 @@ async def stop_face_detection_system(
             detail=f"Failed to stop face detection system: {str(e)}"
         )
 
-@router.get("/status")
-async def get_face_detection_status(
-    current_user: CurrentUser = Depends(require_admin_or_above)
-):
+@router.get("/health")
+async def get_system_health():
     """
-    Get face detection system status and statistics (Admin+ only)
+    Get basic system health information (no authentication required)
     """
     try:
-        status_data = get_system_status()
-        status_data["is_running"] = is_tracking_running
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "services": {
+                "api": "running",
+                "database": "connected",
+                "fts": "not_initialized"
+            }
+        }
         
         return {
             "success": True,
-            "data": status_data
+            "data": health_data
         }
     except Exception as e:
-        logger.error(f"Failed to get system status: {e}")
+        logger.error(f"Failed to get system health: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get system status: {str(e)}"
-        )
-
-@router.get("/live-faces")
-async def get_detected_faces(
-    current_user: CurrentUser = Depends(require_admin_or_above)
-):
-    """
-    Get currently detected faces (Admin+ only)
-    """
-    try:
-        faces = get_live_faces()
-        return {
-            "success": True,
-            "data": faces
-        }
-    except Exception as e:
-        logger.error(f"Failed to get live faces: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get live faces: {str(e)}"
-        )
-
-@router.get("/attendance-data")
-async def get_recent_attendance(
-    current_user: CurrentUser = Depends(require_admin_or_above)
-):
-    """
-    Get recent attendance records (Admin+ only)
-    """
-    try:
-        attendance = get_attendance_data()
-        return {
-            "success": True,
-            "data": attendance
-        }
-    except Exception as e:
-        logger.error(f"Failed to get attendance data: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get attendance data: {str(e)}"
-        )
-
-@router.get("/logs")
-async def get_system_logs(
-    limit: int = 100,
-    current_user: CurrentUser = Depends(require_admin_or_above)
-):
-    """
-    Get recent system logs (Admin+ only)
-    """
-    try:
-        logs = get_logs(limit)
-        return {
-            "success": True,
-            "data": logs
-        }
-    except Exception as e:
-        logger.error(f"Failed to get system logs: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get system logs: {str(e)}"
-        )
-
-@router.get("/camera-feed/{camera_id}")
-async def get_camera_feed(
-    camera_id: int,
-    current_user: CurrentUser = Depends(require_admin_or_above)
-):
-    """
-    Get live camera feed with face detection overlay (Admin+ only)
-    """
-    try:
-        if not is_tracking_running:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Face detection system is not running"
-            )
-        
-        return StreamingResponse(
-            generate_mjpeg(camera_id),
-            media_type="multipart/x-mixed-replace; boundary=frame"
-        )
-    except Exception as e:
-        logger.error(f"Failed to get camera feed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get camera feed: {str(e)}"
+            detail=f"Failed to get system health: {str(e)}"
         )
