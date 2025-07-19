@@ -866,7 +866,13 @@ class FaceTrackingSystem:
 
     def _initialize_multi_gpu_insightface(self):
         # Load camera configurations from database
-        cameras = load_camera_configurations()
+        try:
+            cameras = load_camera_configurations()
+        except Exception as e:
+            log_message(f"[GPU WARNING] Could not load camera configurations: {e}")
+            # Use default GPU 0 if database is not available
+            cameras = [type('Camera', (), {'gpu_id': 0})()]
+        
         gpu_ids = list(set([cam.gpu_id for cam in cameras]))
         for gpu_id in gpu_ids:
             try:
@@ -912,7 +918,12 @@ class FaceTrackingSystem:
 
     def _initialize_cameras(self):
         # Load camera configurations from database
-        cameras = load_camera_configurations()
+        try:
+            cameras = load_camera_configurations()
+        except Exception as e:
+            log_message(f"[CAMERA WARNING] Could not load camera configurations: {e}")
+            cameras = []
+        
         for cam_config in cameras:
             cam_id = cam_config.camera_id
             self.trackers[cam_id] = BYTETracker(
