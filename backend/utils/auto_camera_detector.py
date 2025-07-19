@@ -55,7 +55,7 @@ class AutoCameraDetector:
         
     async def detect_all_cameras(self) -> List[DetectedCamera]:
         """
-        Detect all available cameras on the system
+        Detect all available cameras on the system and automatically store them
         
         Returns:
             List of detected cameras
@@ -63,33 +63,34 @@ class AutoCameraDetector:
         logger.info("Starting comprehensive camera detection...")
         
         all_cameras = []
-        camera_id_counter = 0
         
-        # 1. Detect USB and built-in cameras
+        # 1. Detect USB and built-in cameras (use sequential IDs 0, 1, 2, etc.)
         usb_cameras = self._detect_usb_cameras()
-        for camera in usb_cameras:
-            camera.camera_id = camera_id_counter
+        for i, camera in enumerate(usb_cameras):
+            camera.camera_id = i  # Use sequential camera IDs for local cameras
             all_cameras.append(camera)
-            camera_id_counter += 1
         
-        # 2. Detect IP cameras via ONVIF discovery
+        # 2. Detect IP cameras via ONVIF discovery (continue sequential numbering)
         ip_cameras = await self._detect_ip_cameras()
-        for camera in ip_cameras:
-            camera.camera_id = camera_id_counter
+        start_id = len(usb_cameras)
+        for i, camera in enumerate(ip_cameras):
+            camera.camera_id = start_id + i
             all_cameras.append(camera)
-            camera_id_counter += 1
         
         # 3. Check for cameras in database that might not be auto-detected
         db_cameras = self._get_database_cameras()
-        for camera in db_cameras:
+        start_id = len(usb_cameras) + len(ip_cameras)
+        for i, camera in enumerate(db_cameras):
             # Only add if not already detected
             if not any(c.source == camera.source for c in all_cameras):
-                camera.camera_id = camera_id_counter
+                camera.camera_id = start_id + i
                 all_cameras.append(camera)
-                camera_id_counter += 1
         
         # 4. Test and validate all detected cameras
         working_cameras = self._validate_cameras(all_cameras)
+        
+        # 5. Automatically store working cameras in database with default tripwires
+        await self._auto_store_cameras_with_tripwires(working_cameras)
         
         logger.info(f"Detected {len(working_cameras)} working cameras out of {len(all_cameras)} total")
         
@@ -358,6 +359,80 @@ class AutoCameraDetector:
                 camera.is_working = False
         
         return working_cameras
+    
+    async def _auto_store_cameras_with_tripwires(self, cameras: List[DetectedCamera]) -> None:
+        """Automatically store detected cameras in database with default tripwire configuration."""
+        logger.info("Automatically storing detected cameras with default tripwires...")
+        
+        for camera in cameras:
+            try:
+                # Check if camera already exists in database
+                existing = self.db_manager.get_camera(camera.camera_id)
+                
+                if existing:
+                    # Update existing camera
+                    update_data = {
+                        'camera_name': camera.name,
+                        'camera_type': camera.type.lower(),
+                        'is_active': camera.is_working,
+                        'stream_url': camera.stream_url,
+                        'ip_address': camera.ip_address,
+                        'username': camera.username,
+                        'password': camera.password,
+                        'resolution_width': camera.resolution[0],
+                        'resolution_height': camera.resolution[1],
+                        'fps': camera.fps,
+                        'status': 'active' if camera.is_working else 'inactive'
+                    }
+                    
+                    self.db_manager.update_camera(camera.camera_id, update_data)
+                    logger.info(f"Updated existing camera {camera.camera_id}: {camera.name}")
+                    
+                else:
+                    # Create new camera in database
+                    camera_data = {
+                        'camera_id': camera.camera_id,
+                        'camera_name': camera.name,
+                        'camera_type': camera.type.lower() if camera.type.lower() in ['entry', 'exit', 'general'] else 'entry',
+                        'gpu_id': 0,
+                        'stream_url': camera.stream_url,
+                        'ip_address': camera.ip_address,
+                        'username': camera.username,
+                        'password': camera.password,
+                        'resolution_width': camera.resolution[0],
+                        'resolution_height': camera.resolution[1],
+                        'fps': camera.fps,
+                        'is_active': True,
+                        'status': 'active',
+                        'location_description': f"Auto-detected {camera.type} camera"
+                    }
+                    
+                    created_camera = self.db_manager.create_camera(camera_data)
+                    if created_camera:
+                        logger.info(f"Created new camera {camera.camera_id}: {camera.name}")
+                        
+                        # Create default tripwire for the new camera
+                        tripwire_data = {
+                            'name': 'EntryDetection',
+                            'position': 0.5,
+                            'spacing': 0.01,
+                            'direction': 'horizontal',
+                            'detection_type': 'entry',
+                            'is_active': True
+                        }
+                        
+                        tripwire = self.db_manager.create_tripwire(camera.camera_id, tripwire_data)
+                        if tripwire:
+                            logger.info(f"Created default tripwire for camera {camera.camera_id}: {camera.name}")
+                        else:
+                            logger.warning(f"Failed to create tripwire for camera {camera.camera_id}: {camera.name}")
+                    else:
+                        logger.error(f"Failed to create camera {camera.camera_id}: {camera.name}")
+                        
+            except Exception as e:
+                logger.error(f"Error storing camera {camera.camera_id}: {e}")
+        
+        logger.info("Finished automatically storing detected cameras with default tripwires")
     
     def sync_to_database(self, cameras: List[DetectedCamera]) -> None:
         """Synchronize detected cameras to database"""

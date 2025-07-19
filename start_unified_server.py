@@ -10,6 +10,7 @@ import subprocess
 import argparse
 import socket
 import time
+import asyncio
 from pathlib import Path
 
 def check_port_available(host, port):
@@ -199,6 +200,39 @@ def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=
     except Exception as e:
         print(f"❌ Error starting server: {e}")
 
+def run_camera_detection():
+    """Run automatic camera detection and configuration"""
+    try:
+        print("🔍 Starting automatic camera detection...")
+        
+        # Import here to avoid circular imports
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from backend.utils.auto_camera_detector import AutoCameraDetector
+        
+        async def detect_cameras():
+            detector = AutoCameraDetector()
+            cameras = await detector.detect_all_cameras()
+            return cameras
+        
+        # Run camera detection
+        cameras = asyncio.run(detect_cameras())
+        
+        if cameras:
+            print(f"✅ Detected and configured {len(cameras)} cameras:")
+            for camera in cameras:
+                print(f"   • Camera {camera.camera_id}: {camera.name}")
+                print(f"     Default tripwire: EntryDetection at position 0.5")
+        else:
+            print("⚠️  No cameras detected")
+            print("💡 Cameras can be added manually through the admin interface")
+        
+        print()  # Add spacing
+        
+    except Exception as e:
+        print(f"❌ Error during camera detection: {e}")
+        print("💡 Cameras can be added manually through the admin interface")
+        print()  # Add spacing
+
 def main():
     """Main function with command line argument parsing"""
     parser = argparse.ArgumentParser(
@@ -261,6 +295,12 @@ def main():
         help="Force kill any existing process on the target port"
     )
     
+    parser.add_argument(
+        "--auto-detect-cameras", 
+        action="store_true", 
+        help="Automatically detect and configure cameras on startup"
+    )
+    
     args = parser.parse_args()
     
     print("🎯 Face Recognition Attendance System - Unified Server")
@@ -287,6 +327,11 @@ def main():
         if not check_database_connection():
             print("\n💡 Tip: Try running with --init-db to initialize the database")
             sys.exit(1)
+    
+    # Auto-detect cameras if requested
+    if args.auto_detect_cameras:
+        print("🔍 Auto-detecting cameras...")
+        run_camera_detection()
     
     # Determine FTS enable status
     # Priority: --enable-fts > --no-fts > default (disabled for stability)
