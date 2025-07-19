@@ -20,7 +20,7 @@ import platform
 
 from db.db_manager import DatabaseManager
 from db.db_models import CameraConfig as DBCameraConfig
-from utils.camera_discovery import discover_onvif_cameras
+from utils.camera_discovery import discover_cameras_on_network
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class AutoCameraDetector:
         self.running = False
         self.detection_thread = None
         
-    def detect_all_cameras(self) -> List[DetectedCamera]:
+    async def detect_all_cameras(self) -> List[DetectedCamera]:
         """
         Detect all available cameras on the system
         
@@ -73,7 +73,7 @@ class AutoCameraDetector:
             camera_id_counter += 1
         
         # 2. Detect IP cameras via ONVIF discovery
-        ip_cameras = self._detect_ip_cameras()
+        ip_cameras = await self._detect_ip_cameras()
         for camera in ip_cameras:
             camera.camera_id = camera_id_counter
             all_cameras.append(camera)
@@ -142,14 +142,14 @@ class AutoCameraDetector:
         
         return cameras
     
-    def _detect_ip_cameras(self) -> List[DetectedCamera]:
+    async def _detect_ip_cameras(self) -> List[DetectedCamera]:
         """Detect IP cameras via network discovery"""
         cameras = []
         logger.info("Scanning for IP cameras...")
         
         try:
             # Use ONVIF discovery
-            discovered_cameras = discover_onvif_cameras(timeout=5)
+            discovered_cameras = await discover_cameras_on_network(timeout=5)
             
             for i, cam_info in enumerate(discovered_cameras):
                 try:
@@ -439,23 +439,29 @@ class AutoCameraDetector:
     
     def _continuous_detection_worker(self, interval: int) -> None:
         """Worker thread for continuous camera detection"""
-        while self.running:
-            try:
-                # Run detection
-                cameras = self.detect_all_cameras()
-                
-                # Sync to database
-                self.sync_to_database(cameras)
-                
-                # Wait for next detection cycle
-                for _ in range(interval):
-                    if not self.running:
-                        break
-                    time.sleep(1)
+        import asyncio
+        
+        async def async_detection_work():
+            while self.running:
+                try:
+                    # Run detection
+                    cameras = await self.detect_all_cameras()
                     
-            except Exception as e:
-                logger.error(f"Error in continuous detection: {e}")
-                time.sleep(10)  # Wait before retrying
+                    # Sync to database
+                    self.sync_to_database(cameras)
+                    
+                    # Wait for next detection cycle
+                    for _ in range(interval):
+                        if not self.running:
+                            break
+                        await asyncio.sleep(1)
+                        
+                except Exception as e:
+                    logger.error(f"Error in continuous detection: {e}")
+                    await asyncio.sleep(10)  # Wait before retrying
+        
+        # Run the async function in this thread
+        asyncio.run(async_detection_work())
 
 # Global instance
 auto_detector = AutoCameraDetector()
@@ -464,9 +470,9 @@ def get_auto_detector() -> AutoCameraDetector:
     """Get the global auto detector instance"""
     return auto_detector
 
-def detect_all_available_cameras() -> List[DetectedCamera]:
+async def detect_all_available_cameras() -> List[DetectedCamera]:
     """Convenience function to detect all cameras"""
-    return auto_detector.detect_all_cameras()
+    return await auto_detector.detect_all_cameras()
 
 def start_auto_detection(interval: int = 300) -> None:
     """Start automatic camera detection"""
