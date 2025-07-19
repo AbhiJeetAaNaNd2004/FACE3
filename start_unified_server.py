@@ -8,7 +8,57 @@ import os
 import sys
 import subprocess
 import argparse
+import socket
+import time
 from pathlib import Path
+
+def check_port_available(host, port):
+    """Check if a port is available"""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((host, port))
+            return True
+    except OSError:
+        return False
+
+def find_available_port(host, start_port, max_attempts=10):
+    """Find an available port starting from start_port"""
+    for port in range(start_port, start_port + max_attempts):
+        if check_port_available(host, port):
+            return port
+    return None
+
+def kill_process_on_port(port):
+    """Kill any process using the specified port"""
+    try:
+        # Try to find and kill process using the port
+        if sys.platform == "win32":
+            # Windows command
+            cmd = f"netstat -ano | findstr :{port}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.stdout:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    if f":{port}" in line and "LISTENING" in line:
+                        parts = line.split()
+                        if len(parts) >= 5:
+                            pid = parts[-1]
+                            subprocess.run(f"taskkill /f /pid {pid}", shell=True, capture_output=True)
+                            print(f"🔄 Killed process {pid} using port {port}")
+                            time.sleep(1)  # Give time for port to be released
+        else:
+            # Unix/Linux command
+            cmd = f"lsof -ti:{port}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.stdout:
+                pids = result.stdout.strip().split('\n')
+                for pid in pids:
+                    if pid:
+                        subprocess.run(f"kill -9 {pid}", shell=True, capture_output=True)
+                        print(f"🔄 Killed process {pid} using port {port}")
+                time.sleep(1)  # Give time for port to be released
+    except Exception as e:
+        print(f"⚠️ Could not kill process on port {port}: {e}")
 
 def check_requirements():
     """Check if all required packages are installed"""
@@ -66,9 +116,31 @@ def initialize_database():
         print(f"❌ Error during database initialization: {e}")
         return False
 
-def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=True):
+def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=True, force_kill=False):
     """Start the FastAPI server with integrated FTS"""
     try:
+        # Check if port is available or force kill if requested
+        if force_kill or not check_port_available(host, port):
+            if force_kill:
+                print(f"🔄 Force killing any process on port {port}...")
+            else:
+                print(f"⚠️ Port {port} is already in use")
+                print(f"🔄 Attempting to free port {port}...")
+            kill_process_on_port(port)
+            
+            # Check again if port is now available
+            if check_port_available(host, port):
+                print(f"✅ Port {port} is now available")
+            else:
+                # Find an alternative port
+                alternative_port = find_available_port(host, port)
+                if alternative_port:
+                    print(f"🔄 Using alternative port {alternative_port}")
+                    port = alternative_port
+                else:
+                    print(f"❌ No available ports found starting from {port}")
+                    return
+        
         backend_path = Path(__file__).parent / "backend"
         os.chdir(backend_path)
         
@@ -160,6 +232,12 @@ def main():
         help="Disable Face Tracking System auto-start"
     )
     
+    parser.add_argument(
+        "--force", 
+        action="store_true", 
+        help="Force kill any existing process on the target port"
+    )
+    
     args = parser.parse_args()
     
     print("🎯 Face Recognition Attendance System - Unified Server")
@@ -193,7 +271,8 @@ def main():
         port=args.port,
         reload=args.reload,
         workers=args.workers,
-        enable_fts=not args.no_fts
+        enable_fts=not args.no_fts,
+        force_kill=args.force
     )
 
 if __name__ == "__main__":

@@ -536,6 +536,38 @@ npx tsc --noEmit
 
 ### Common Issues
 
+#### Port Already in Use Error (Error 10048)
+This error occurs when port 8000 is already being used by another process.
+
+**Quick Fix:**
+```bash
+# Method 1: Use automatic cleanup
+npm run start:force
+
+# Method 2: Manual cleanup
+npm run cleanup:port
+
+# Method 3: Run cleanup script
+# Linux/Mac:
+./fix_port_conflict.sh
+
+# Windows:
+fix_port_conflict.bat
+
+# Method 4: Use different port
+python start_unified_server.py --port 8001
+```
+
+**Manual Port Cleanup:**
+```bash
+# Windows:
+netstat -ano | findstr :8000
+taskkill /f /pid <PID>
+
+# Linux/Mac:
+lsof -ti:8000 | xargs kill -9
+```
+
 #### Database Connection Errors
 ```bash
 # Test connection
