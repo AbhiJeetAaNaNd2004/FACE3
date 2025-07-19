@@ -75,49 +75,135 @@ def detect_cameras():
     return available_cameras
 
 def generate_camera_stream(camera_id: int) -> Generator[bytes, None, None]:
-    """Generate live MJPEG stream from camera"""
-    cap = None
+    """Generate live MJPEG stream from camera with FTS processing"""
     try:
-        # Try to open the camera
-        cap = cv2.VideoCapture(camera_id)
-        if not cap.isOpened():
-            logger.error(f"Cannot open camera {camera_id}")
-            # Generate error frame
-            error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-            cv2.putText(error_frame, f"Camera {camera_id} not available", (50, 240), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            _, buffer = cv2.imencode('.jpg', error_frame)
-            frame_bytes = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            return
+        # Try to get processed frame from FTS system first
+        from backend.core.fts_system import system_instance
         
-        # Set camera properties for better performance
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        cap.set(cv2.CAP_PROP_FPS, 30)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer size for lower latency
+        if system_instance and hasattr(system_instance, 'latest_frames'):
+            logger.info(f"Using FTS-processed stream for camera {camera_id}")
+            
+            frame_count = 0
+            last_frame_time = time.time()
+            last_fps = 0
+            
+            while True:
+                try:
+                    # Get latest processed frame from FTS
+                    with system_instance.frame_locks.get(camera_id, threading.Lock()):
+                        if camera_id in system_instance.latest_frames:
+                            frame = system_instance.latest_frames[camera_id]
+                            if frame is not None:
+                                frame = frame.copy()
+                            else:
+                                frame = None
+                        else:
+                            frame = None
+                    
+                    if frame is None:
+                        # Generate "processing" frame
+                        processing_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                        cv2.putText(processing_frame, "FTS Processing...", (180, 220), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                        cv2.putText(processing_frame, f"Camera {camera_id}", (220, 260), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                        frame = processing_frame
+                    
+                    frame_count += 1
+                    current_time = time.time()
+                    
+                    # Add FTS overlay information
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    cv2.putText(frame, f"FTS Camera {camera_id}", (10, 30), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                    cv2.putText(frame, timestamp, (10, frame.shape[0] - 10), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                    
+                    # Calculate and display FPS
+                    if current_time - last_frame_time >= 1.0:
+                        last_fps = frame_count / (current_time - last_frame_time)
+                        frame_count = 0
+                        last_frame_time = current_time
+                    
+                    cv2.putText(frame, f"FPS: {last_fps:.1f}", 
+                               (frame.shape[1] - 100, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                    
+                    # Add face detection info if available
+                    if camera_id in system_instance.latest_faces:
+                        face_count = len(system_instance.latest_faces[camera_id])
+                        cv2.putText(frame, f"Faces: {face_count}", 
+                                   (frame.shape[1] - 100, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1)
+                    
+                    # Encode frame as JPEG
+                    ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    if ret:
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                    
+                    # Control frame rate
+                    time.sleep(0.033)  # ~30 FPS
+                    
+                except Exception as e:
+                    logger.warning(f"Error getting FTS frame for camera {camera_id}: {e}")
+                    time.sleep(0.1)
+                    continue
         
-        frame_count = 0
-        start_time = time.time()
-        
-        while True:
-            ret, frame = cap.read()
-            if not ret or frame is None:
-                logger.warning(f"Failed to read frame from camera {camera_id}")
-                # Generate "no signal" frame
-                no_signal_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                cv2.putText(no_signal_frame, "No Signal", (250, 240), 
+        else:
+            # Fallback to direct camera access if FTS not available
+            logger.info(f"FTS not available, using direct camera access for camera {camera_id}")
+            
+            # Get camera from auto-detector or database
+            from backend.utils.auto_camera_detector import get_auto_detector
+            auto_detector = get_auto_detector()
+            detected_cameras = auto_detector.get_detected_cameras()
+            
+            camera_source = None
+            for cam in detected_cameras:
+                if cam.camera_id == camera_id:
+                    camera_source = cam.source
+                    break
+            
+            if camera_source is None:
+                camera_source = camera_id
+            
+            cap = cv2.VideoCapture(camera_source)
+            
+            if not cap.isOpened():
+                logger.error(f"Cannot open camera {camera_id}")
+                # Generate error frame
+                error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                cv2.putText(error_frame, f"Camera {camera_id} not available", (50, 240), 
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                _, buffer = cv2.imencode('.jpg', no_signal_frame)
+                _, buffer = cv2.imencode('.jpg', error_frame)
                 frame_bytes = buffer.tobytes()
-            else:
-                # Add timestamp and camera info overlay
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                cv2.putText(frame, f"Camera {camera_id} - {timestamp}", (10, 30), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                
-                # Add FPS counter
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                return
+            
+            # Set camera properties for better performance
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            cap.set(cv2.CAP_PROP_FPS, 30)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer size for lower latency
+            
+            frame_count = 0
+            start_time = time.time()
+            
+            while True:
+                ret, frame = cap.read()
+                if not ret or frame is None:
+                    logger.warning(f"Failed to read frame from camera {camera_id}")
+                    # Generate "no signal" frame
+                    no_signal_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                    cv2.putText(no_signal_frame, "No Signal", (250, 240), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    _, buffer = cv2.imencode('.jpg', no_signal_frame)
+                    frame_bytes = buffer.tobytes()
+                else:
+                    # Add timestamp and camera info overlay
+                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                    cv2.putText(frame, f"Direct Camera {camera_id} - {timestamp}", (10, 30), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 frame_count += 1
                 elapsed = time.time() - start_time
                 if elapsed > 0:
@@ -345,14 +431,37 @@ async def detect_available_cameras(
     current_user: CurrentUser = Depends(require_admin_or_above)
 ):
     """
-    Detect available cameras on the system (Admin+ only)
+    Detect all available cameras using comprehensive auto-detection (Admin+ only)
     """
     try:
-        available_cameras = detect_cameras()
+        # Use comprehensive auto-detection
+        from backend.utils.auto_camera_detector import get_auto_detector
+        auto_detector = get_auto_detector()
+        detected_cameras = auto_detector.detect_all_cameras()
+        
+        # Convert to API response format
+        camera_list = []
+        for cam in detected_cameras:
+            camera_list.append({
+                "id": cam.camera_id,
+                "name": cam.name,
+                "type": cam.type,
+                "source": cam.source,
+                "resolution": f"{cam.resolution[0]}x{cam.resolution[1]}",
+                "fps": cam.fps,
+                "status": cam.status,
+                "is_working": cam.is_working,
+                "ip_address": cam.ip_address,
+                "stream_url": cam.stream_url,
+                "last_seen": cam.last_seen.isoformat()
+            })
+        
         return {
-            "detected_cameras": available_cameras,
-            "total_detected": len(available_cameras),
-            "detection_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            "detected_cameras": camera_list,
+            "total_detected": len(camera_list),
+            "detection_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "auto_detection_active": True,
+            "fts_integration": True
         }
     except Exception as e:
         logger.error(f"Camera detection failed: {e}")

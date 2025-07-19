@@ -189,14 +189,14 @@ async def log_requests(request: Request, call_next):
     return response
 
 # Include routers
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(employees.router, prefix="/employees", tags=["Employee Management"])
-app.include_router(departments.router, prefix="/departments", tags=["Department Management"])
-app.include_router(attendance.router, prefix="/attendance", tags=["Attendance Tracking"])
-app.include_router(cameras.router, prefix="/cameras", tags=["Camera Management"])
-app.include_router(embeddings.router, prefix="/embeddings", tags=["Face Embeddings"])
-app.include_router(streaming.router, prefix="/streaming", tags=["Video Streaming"])
-app.include_router(system.router, prefix="/system", tags=["System Management"])
+app.include_router(auth.router)
+app.include_router(employees.router)
+app.include_router(departments.router)
+app.include_router(attendance.router)
+app.include_router(cameras.router)
+app.include_router(embeddings.router)
+app.include_router(streaming.router)
+app.include_router(system.router)
 
 # WebSocket endpoint for real-time activity updates
 @app.websocket("/ws/activity")

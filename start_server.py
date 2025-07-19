@@ -16,7 +16,7 @@ def check_requirements():
         import fastapi
         import uvicorn
         import sqlalchemy
-        # import psycopg2  # PostgreSQL only - no SQLite support
+        # import psycopg2  # PostgreSQL support
         import passlib
         import jose
         print("✅ All required packages are installed")

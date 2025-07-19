@@ -38,10 +38,12 @@ A comprehensive face recognition-based attendance tracking system with real-time
 - **Live Monitoring** - Real-time camera feeds with detection overlays
 
 ### 🔧 Technical Features
+- **Automatic Camera Detection** - Auto-detects all connected cameras (USB, built-in, IP)
+- **FTS-Processed Streaming** - All camera feeds processed through Face Tracking System
 - **ONVIF Camera Discovery** - Automatic network camera detection
 - **Tripwire Detection** - Configurable entry/exit zones
 - **WebSocket Support** - Real-time activity updates
-- **Database Management** - SQLite/PostgreSQL with SQLAlchemy ORM
+- **Database Management** - PostgreSQL with SQLAlchemy ORM
 - **JWT Authentication** - Secure token-based authentication
 - **Docker Support** - Containerized deployment option
 
@@ -77,7 +79,7 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 cd frontend && npm install && cd ..
 
-# 4. Setup database (PostgreSQL only - no SQLite)
+# 4. Setup database (PostgreSQL)
 python setup_postgresql.py  # Creates PostgreSQL database
 python backend/init_db.py   # Initializes tables and sample data
 
@@ -135,7 +137,7 @@ Employee:    john.doe / john123
 - **RAM**: 16GB+ for multiple cameras
 - **GPU**: NVIDIA GPU for accelerated processing
 - **CPU**: Multi-core processor (Intel i5/AMD Ryzen 5+)
-- **Database**: PostgreSQL 12+ (recommended over SQLite)
+- **Database**: PostgreSQL 12+
 
 ### Software Dependencies
 ```bash
@@ -222,12 +224,11 @@ Create a `.env` file in the project root:
 DB_TYPE=postgresql
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=face_attendance_db
+DB_NAME=frs_db
 DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
-# Alternative: SQLite (for development)
-# DATABASE_URL=sqlite:///./backend/face_attendance.db
+
 
 # JWT & Security Configuration
 SECRET_KEY=your-secret-key-change-in-production-2024
@@ -283,7 +284,7 @@ LOG_RETENTION=30 days
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=face_attendance_db
+DB_NAME=frs_db
 DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
@@ -353,7 +354,7 @@ IMAGE_INLINE_SIZE_LIMIT=10000
 
 ## 🗄️ Database Setup
 
-> **⚠️ Important Note:** This system uses **PostgreSQL only**. SQLite is not supported and has been removed. Docker deployment is not currently supported - use direct installation only.
+> **⚠️ Important Note:** This system uses **PostgreSQL** as the database. Docker deployment is not currently supported - use direct installation only.
 
 ### PostgreSQL Setup (Required)
 
@@ -374,9 +375,9 @@ sudo systemctl enable postgresql
 sudo -u postgres psql
 
 # Create database and user
-CREATE DATABASE face_attendance_db;
+CREATE DATABASE frs_db;
 CREATE USER postgres WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE face_attendance_db TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE frs_db TO postgres;
 \q
 ```
 
@@ -387,15 +388,6 @@ python setup_postgresql.py
 
 # Initialize database with sample data
 python backend/init_db.py
-```
-
-### SQLite Setup (Alternative)
-
-For development or testing, you can use SQLite:
-
-```env
-# In your .env file
-DATABASE_URL=sqlite:///./backend/face_attendance.db
 ```
 
 ### Database Schema
@@ -917,7 +909,7 @@ python setup_postgresql.py
 python backend/init_db.py
 
 # Check database status
-psql -h localhost -U postgres -d face_attendance_db
+psql -h localhost -U postgres -d frs_db
 ```
 
 ## 🚨 Port Conflict Solutions
@@ -1128,7 +1120,7 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_DB: face_attendance_db
+      POSTGRES_DB: frs_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:
@@ -1294,7 +1286,7 @@ curl http://localhost:8000/system/status
 
 ### 🚫 What NOT to Use
 
-- ❌ **SQLite** - Removed, use PostgreSQL only
+
 - ❌ **Docker** - Not supported currently
 - ❌ **Multiple workers with FTS** - Causes memory conflicts
 - ❌ **Standard startup if having memory issues** - Use `start_system_fixed.py`

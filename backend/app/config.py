@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     # Database Configuration
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
-    DB_NAME: str = "face_attendance_db"
+    DB_NAME: str = "frs_db"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "password"
     

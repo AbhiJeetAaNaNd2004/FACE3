@@ -8,6 +8,7 @@ python-multipart>=0.0.20
 
 # Database ORM and Management
 sqlalchemy>=2.0.30
+psycopg2-binary>=2.9.0
 alembic>=1.13.0
 
 # Authentication and Security

@@ -73,7 +73,7 @@ def create_database_and_user():
         cursor = conn.cursor()
         
         # Get configuration from environment
-        db_name = os.getenv('DB_NAME', 'face_attendance_db')
+        db_name = os.getenv('DB_NAME', 'frs_db')
         db_user = os.getenv('DB_USER', 'postgres')
         db_password = os.getenv('DB_PASSWORD', 'password')
         
@@ -125,7 +125,7 @@ def test_application_connection():
     try:
         db_host = os.getenv('DB_HOST', 'localhost')
         db_port = os.getenv('DB_PORT', '5432')
-        db_name = os.getenv('DB_NAME', 'face_attendance_db')
+        db_name = os.getenv('DB_NAME', 'frs_db')
         db_user = os.getenv('DB_USER', 'postgres')
         db_password = os.getenv('DB_PASSWORD', 'password')
         
@@ -159,7 +159,7 @@ def show_connection_info():
     print("-" * 40)
     print(f"Host: {os.getenv('DB_HOST', 'localhost')}")
     print(f"Port: {os.getenv('DB_PORT', '5432')}")
-    print(f"Database: {os.getenv('DB_NAME', 'face_attendance_db')}")
+    print(f"Database: {os.getenv('DB_NAME', 'frs_db')}")
     print(f"User: {os.getenv('DB_USER', 'postgres')}")
     print(f"Password: {'*' * len(os.getenv('DB_PASSWORD', 'password'))}")
 
