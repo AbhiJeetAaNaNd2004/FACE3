@@ -5,6 +5,12 @@ import { UserRole } from './types';
 import { LoginPage } from './pages/login/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { SuperAdminDashboard } from './pages/super-admin/SuperAdminDashboard';
+import { UserManagement } from './pages/super-admin/UserManagement';
+import { EmployeeManagement } from './pages/admin/EmployeeManagement';
+import { AttendanceDashboard } from './pages/admin/AttendanceDashboard';
+import { CameraManagement } from './pages/admin/CameraManagement';
+import { LiveMonitor } from './pages/admin/LiveMonitor';
+import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -42,30 +48,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   return <>{children}</>;
 };
 
-// Placeholder components for other dashboards
-const AdminDashboard: React.FC = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-      <p className="text-gray-600">Administrative controls and employee management</p>
-    </div>
-    <div className="bg-white p-6 rounded-lg shadow">
-      <p>Admin dashboard content coming soon...</p>
-    </div>
-  </div>
-);
 
-const EmployeeDashboard: React.FC = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">My Dashboard</h1>
-      <p className="text-gray-600">View your attendance and profile information</p>
-    </div>
-    <div className="bg-white p-6 rounded-lg shadow">
-      <p>Employee dashboard content coming soon...</p>
-    </div>
-  </div>
-);
 
 const Unauthorized: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -136,10 +119,42 @@ function App() {
               }
             />
             <Route
-              path="/super-admin/*"
+              path="/super-admin/users"
               element={
                 <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-                  <SuperAdminDashboard />
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/employees"
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
+                  <EmployeeManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/attendance"
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
+                  <AttendanceDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/cameras"
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
+                  <CameraManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/monitor"
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
+                  <LiveMonitor />
                 </ProtectedRoute>
               }
             />
@@ -149,15 +164,39 @@ function App() {
               path="/admin"
               element={
                 <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                  <AdminDashboard />
+                  <AttendanceDashboard />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/admin/*"
+              path="/admin/employees"
               element={
                 <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                  <AdminDashboard />
+                  <EmployeeManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/attendance"
+              element={
+                <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                  <AttendanceDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/cameras"
+              element={
+                <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                  <CameraManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/monitor"
+              element={
+                <ProtectedRoute requiredRole={UserRole.ADMIN}>
+                  <LiveMonitor />
                 </ProtectedRoute>
               }
             />
@@ -165,14 +204,6 @@ function App() {
             {/* Employee routes */}
             <Route
               path="/employee"
-              element={
-                <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
-                  <EmployeeDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employee/*"
               element={
                 <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
                   <EmployeeDashboard />

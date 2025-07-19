@@ -82,26 +82,19 @@ export interface PresentEmployeesResponse {
 // Camera types
 export interface Camera {
   id: number;
-  camera_id: number;
-  camera_name: string;
-  stream_url?: string;
-  ip_address?: string;
-  username?: string;
-  password?: string;
-  camera_type: string;
+  name: string;
+  location: string;
+  stream_url: string;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface CameraCreate {
-  camera_id: number;
-  camera_name: string;
-  stream_url?: string;
-  ip_address?: string;
-  username?: string;
-  password?: string;
-  camera_type: string;
+  name: string;
+  location: string;
+  stream_url: string;
+  is_active?: boolean;
 }
 
 export interface Tripwire {

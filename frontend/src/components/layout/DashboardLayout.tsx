@@ -82,10 +82,11 @@ export const DashboardLayout: React.FC = () => {
     if (hasRole(user, UserRole.SUPER_ADMIN)) {
       items.push(
         { name: 'Dashboard', href: '/super-admin', icon: HomeIcon },
-        { name: 'System Control', href: '/super-admin/system', icon: CogIcon },
         { name: 'User Management', href: '/super-admin/users', icon: UsersIcon },
+        { name: 'Employee Management', href: '/super-admin/employees', icon: UsersIcon },
+        { name: 'Attendance', href: '/super-admin/attendance', icon: ClockIcon },
         { name: 'Camera Management', href: '/super-admin/cameras', icon: CameraIcon },
-        { name: 'System Logs', href: '/super-admin/logs', icon: DocumentIcon },
+        { name: 'Live Monitor', href: '/super-admin/monitor', icon: CameraIcon },
       );
     }
 
@@ -93,8 +94,9 @@ export const DashboardLayout: React.FC = () => {
       items.push(
         { name: 'Dashboard', href: '/admin', icon: HomeIcon },
         { name: 'Employee Management', href: '/admin/employees', icon: UsersIcon },
-        { name: 'Attendance Dashboard', href: '/admin/attendance', icon: ClockIcon },
-        { name: 'Live Camera Feed', href: '/admin/camera-feed', icon: CameraIcon },
+        { name: 'Attendance', href: '/admin/attendance', icon: ClockIcon },
+        { name: 'Camera Management', href: '/admin/cameras', icon: CameraIcon },
+        { name: 'Live Monitor', href: '/admin/monitor', icon: CameraIcon },
       );
     }
 
