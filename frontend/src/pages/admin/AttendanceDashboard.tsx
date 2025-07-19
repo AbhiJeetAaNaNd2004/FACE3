@@ -24,8 +24,8 @@ export const AttendanceDashboard: React.FC = () => {
   }, [fetchAllAttendance, fetchPresentEmployees, fetchEmployees]);
 
   // Process attendance data for display
-  const flattenedAttendance = allAttendance.flatMap(emp => 
-    emp.attendance_logs.map(log => ({
+  const flattenedAttendance = (allAttendance || []).flatMap(emp => 
+    (emp.attendance_logs || []).map(log => ({
       ...log,
       employee_name: emp.employee_name,
       employee_id: emp.employee_id

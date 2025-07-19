@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { TableColumn } from '../../types';
-import { Button } from './Button';
 import { Input } from './Input';
 import { cn } from '../../utils/cn';
 
 interface DataTableProps<T> {
-  data: T[];
+  data: T[] | null | undefined;
   columns: TableColumn<T>[];
   title?: string;
   searchable?: boolean;
@@ -51,11 +50,13 @@ export function DataTable<T>({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = data;
+    // Ensure data is always an array
+    const safeData = data || [];
+    let filtered = safeData;
 
     // Apply search filter
     if (searchTerm && searchable) {
-      filtered = data.filter(item =>
+      filtered = safeData.filter(item =>
         columns.some(column => {
           const value = item[column.key as keyof T];
           return String(value).toLowerCase().includes(searchTerm.toLowerCase());
@@ -208,7 +209,7 @@ export function DataTable<T>({
         <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {processedData.length} of {data.length} results
+              Showing {processedData.length} of {(data || []).length} results
               {searchTerm && ` for "${searchTerm}"`}
             </div>
           </div>
