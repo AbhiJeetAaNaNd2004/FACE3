@@ -25,28 +25,28 @@ logger = logging.getLogger(__name__)
 def initialize_database():
     """Initialize database with tables and sample data"""
     
-    print("🗄️  Face Recognition Attendance System - Database Initialization")
+    print("Database Initialization - Face Recognition Attendance System")
     print("=" * 70)
     
     # Test database connection first
-    print("🔍 Testing database connection...")
+    print("Testing database connection...")
     if not test_connection():
-        print("❌ Database connection failed. Please check your configuration.")
+        print("ERROR: Database connection failed. Please check your configuration.")
         return False
     
-    print("✅ Database connection successful")
+    print("SUCCESS: Database connection successful")
     
     # Create tables
-    print("🏗️  Creating database tables...")
+    print("Creating database tables...")
     try:
         create_tables()
-        print("✅ Database tables created successfully")
+        print("SUCCESS: Database tables created successfully")
     except Exception as e:
-        print(f"❌ Error creating tables: {e}")
+        print(f"ERROR: Error creating tables: {e}")
         return False
     
     # Insert sample data
-    print("📝 Inserting sample data...")
+    print("Inserting sample data...")
     
     db = next(get_db())
     try:
@@ -73,9 +73,9 @@ def initialize_database():
             
             # Commit departments first so we can reference them
             db.commit()
-            print("✅ Created sample departments")
+            print("SUCCESS: Created sample departments")
         else:
-            print("ℹ️  Sample departments already exist")
+            print("INFO: Sample departments already exist")
         
         # Get department IDs for employee creation
         eng_dept = db.query(Department).filter(Department.name == "Engineering").first()
@@ -123,9 +123,9 @@ def initialize_database():
             
             # Commit employees before creating user accounts
             db.commit()
-            print("✅ Created sample employees")
+            print("SUCCESS: Created sample employees")
         else:
-            print("ℹ️  Sample employees already exist")
+            print("INFO: Sample employees already exist")
         
         # Create user accounts for all roles (after employees are created)
         users_to_create = [
@@ -171,9 +171,9 @@ def initialize_database():
                     is_active=True
                 )
                 db.add(user)
-                print(f"✅ Created {user_data['description']} (username: {user_data['username']}, password: {user_data['password']})")
+                print(f"SUCCESS: Created {user_data['description']} (username: {user_data['username']}, password: {user_data['password']})")
             else:
-                print(f"ℹ️  User {user_data['username']} already exists")
+                print(f"INFO: User {user_data['username']} already exists")
         
         # Check if sample camera exists
         existing_camera = db.query(CameraConfig).filter(CameraConfig.camera_id == 0).first()
@@ -191,19 +191,19 @@ def initialize_database():
                 location_description="Main entrance door"
             )
             db.add(camera)
-            print("✅ Created sample camera configuration")
+            print("SUCCESS: Created sample camera configuration")
         else:
-            print("ℹ️  Sample camera already exists")
+            print("INFO: Sample camera already exists")
         
         # Commit all changes
         db.commit()
-        print("✅ Sample data inserted successfully")
+        print("SUCCESS: Sample data inserted successfully")
         
         return True
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Error inserting sample data: {e}")
+        print(f"ERROR: Error inserting sample data: {e}")
         return False
     finally:
         db.close()
@@ -230,9 +230,9 @@ def main():
         print("   Employee:    john.doe / john123")
         print("   Employee:    mike.johnson / mike123")
         print("=" * 70)
-        print("🚀 You can now start the server!")
+        print("SUCCESS: You can now start the server!")
     else:
-        print("\n❌ Database initialization failed!")
+        print("\nERROR: Database initialization failed!")
         sys.exit(1)
 
 if __name__ == "__main__":
