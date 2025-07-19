@@ -172,22 +172,22 @@ def load_camera_configurations() -> List[CameraConfig]:
                 )
                 tripwires.append(tripwire)
             
-            # Create FTS camera config with additional fields
+            # Create FTS camera config
             camera_config = CameraConfig(
                 camera_id=db_config.camera_id,
                 gpu_id=db_config.gpu_id,
                 camera_type=db_config.camera_type,
                 tripwires=tripwires,
                 resolution=db_config.resolution,
-                fps=db_config.fps
+                fps=db_config.fps,
+                camera_name=getattr(db_config, 'camera_name', f"Camera {db_config.camera_id}"),
+                ip_address=getattr(db_config, 'ip_address', None),
+                stream_url=getattr(db_config, 'stream_url', None),
+                username=getattr(db_config, 'username', None),
+                password=getattr(db_config, 'password', None),
+                is_active=getattr(db_config, 'is_active', True)
             )
             
-            # Add additional fields that may be needed for camera access
-            camera_config.stream_url = getattr(db_config, 'stream_url', None)
-            camera_config.ip_address = getattr(db_config, 'ip_address', None)
-            camera_config.username = getattr(db_config, 'username', None)
-            camera_config.password = getattr(db_config, 'password', None)
-            camera_config.camera_name = getattr(db_config, 'camera_name', f"Camera {db_config.camera_id}")
             cameras.append(camera_config)
         
         # If no cameras found in database, try to create from detected cameras
@@ -201,16 +201,15 @@ def load_camera_configurations() -> List[CameraConfig]:
                     tripwires=[
                         TripwireConfig(position=0.755551, spacing=0.01, direction="horizontal", name="EntryDetection")],
                     resolution=detected_cam.resolution,
-                    fps=detected_cam.fps
+                    fps=detected_cam.fps,
+                    camera_name=getattr(detected_cam, 'name', f"Camera {detected_cam.camera_id}"),
+                    ip_address=getattr(detected_cam, 'ip_address', None),
+                    stream_url=getattr(detected_cam, 'stream_url', None),
+                    username=getattr(detected_cam, 'username', None),
+                    password=getattr(detected_cam, 'password', None),
+                    is_active=True
                 )
                 
-                # Add detected camera specific fields
-                camera_config.stream_url = detected_cam.stream_url
-                camera_config.ip_address = detected_cam.ip_address
-                camera_config.username = detected_cam.username
-                camera_config.password = detected_cam.password
-                camera_config.camera_name = detected_cam.name
-                camera_config.source = detected_cam.source
                 cameras.append(camera_config)
         
         log_message(f"Loaded {len(cameras)} camera configurations from database")

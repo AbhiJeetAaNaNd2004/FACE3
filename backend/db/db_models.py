@@ -102,23 +102,24 @@ class CameraConfig(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     camera_id = Column(Integer, unique=True, nullable=False)
-    camera_name = Column(String, nullable=False)
+    camera_name = Column(String, nullable=True)  # Optional for simplified setup
     camera_type = Column(String, default='entry')  # 'entry', 'exit', 'general'
-    ip_address = Column(String, nullable=True)  # Camera IP address
-    stream_url = Column(String, nullable=True)  # RTSP/HTTP stream URL
-    username = Column(String, nullable=True)  # Camera authentication
-    password = Column(String, nullable=True)  # Camera authentication
+    ip_address = Column(String, nullable=True)  # Optional for LAN cameras
+    stream_url = Column(String, nullable=True)  # Optional for LAN cameras
+    username = Column(String, nullable=True)  # Optional for LAN cameras
+    password = Column(String, nullable=True)  # Optional for LAN cameras
     resolution_width = Column(Integer, default=1920)
     resolution_height = Column(Integer, default=1080)
     fps = Column(Integer, default=30)
     gpu_id = Column(Integer, default=0)  # GPU assignment for processing
-    status = Column(String, default='discovered')  # 'discovered', 'configured', 'active', 'inactive'
+    status = Column(String, default='active')  # Simplified: 'active', 'inactive'
     is_active = Column(Boolean, default=False)
-    location_description = Column(String, nullable=True)  # Human-readable location
-    manufacturer = Column(String, nullable=True)  # Camera manufacturer
-    model = Column(String, nullable=True)  # Camera model
-    firmware_version = Column(String, nullable=True)  # Camera firmware
-    onvif_supported = Column(Boolean, default=False)  # ONVIF support flag
+    # Optional fields for advanced setups
+    location_description = Column(String, nullable=True)
+    manufacturer = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    firmware_version = Column(String, nullable=True)
+    onvif_supported = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
@@ -134,8 +135,8 @@ class Tripwire(Base):
     position = Column(Float, nullable=False)  # Position (0.0 to 1.0)
     spacing = Column(Float, default=0.01)  # Spacing for detection
     direction = Column(String, nullable=False)  # 'horizontal', 'vertical'
-    detection_type = Column(String, default='entry')  # 'entry', 'exit', 'counting'
-    is_active = Column(Boolean, default=True)
+    detection_type = Column(String, default='entry')  # Optional: 'entry', 'exit', 'counting'
+    is_active = Column(Boolean, default=True)  # Optional: allow disabling tripwires
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
