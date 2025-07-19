@@ -1,0 +1,31 @@
+{
+  "name": "face-recognition-attendance-system",
+  "version": "1.0.0",
+  "description": "Complete face recognition attendance system with FastAPI backend and React frontend",
+  "scripts": {
+    "dev": "concurrently \"python start_unified_server.py --reload\" \"cd frontend && npm start\"",
+    "dev:backend": "python start_unified_server.py --reload",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "pip install -r requirements.txt",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "init:db": "python start_unified_server.py --init-db",
+    "start": "python start_unified_server.py",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && pytest"
+  },
+  "keywords": [
+    "face-recognition",
+    "attendance-system",
+    "fastapi",
+    "react",
+    "typescript",
+    "computer-vision"
+  ],
+  "author": "Face Recognition Attendance System",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
