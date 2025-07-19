@@ -1,811 +1,508 @@
-# Face Recognition Attendance System
+# 🎯 Face Recognition Attendance System
 
-A complete, production-ready Face Recognition Attendance System built with FastAPI backend and React frontend. This system provides real-time face recognition for employee attendance tracking with a modern, responsive web interface and advanced camera management capabilities.
-
-## 📋 Table of Contents
-
-- [Features](#-features)
-- [System Architecture](#️-system-architecture)
-- [Prerequisites](#-prerequisites)
-- [Installation & Setup](#-installation--setup)
-- [Project Structure](#-project-structure)
-- [Configuration](#-configuration)
-- [Starting the System](#-starting-the-system)
-- [User Roles & Permissions](#-user-roles--permissions)
-- [API Documentation](#-api-documentation)
-- [Face Recognition System](#-face-recognition-system)
-- [Camera Management](#-camera-management)
-- [Development](#️-development)
-- [Troubleshooting](#-troubleshooting)
-- [System Monitoring](#-system-monitoring)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
+A comprehensive face recognition-based attendance tracking system with real-time detection, web interface, and role-based access control.
 
 ## 🌟 Features
 
-### Backend Features
-- **FastAPI-based RESTful API** with automatic documentation
-- **Real-time Face Recognition** using OpenCV and InsightFace
-- **JWT Authentication** with role-based access control
-- **PostgreSQL Database** with SQLAlchemy ORM
-- **WebSocket Support** for real-time updates
-- **ONVIF Camera Discovery** with automated network scanning
-- **Employee Management** with face enrollment and department tracking
-- **Attendance Tracking** with confidence scoring and detailed logs
-- **Multi-GPU Support** for face recognition processing
-- **FAISS Vector Search** for fast face matching
-- **ByteTracker Integration** for object tracking
+### ✅ Core Functionality
+- **Real-time Face Detection & Recognition** - AI-powered attendance tracking
+- **Multi-Camera Support** - Process multiple camera feeds simultaneously  
+- **Role-Based Access Control** - Super Admin, Admin, and Employee roles
+- **Web Dashboard** - Modern React frontend with real-time updates
+- **RESTful API** - FastAPI backend with OpenAPI documentation
+- **Camera Management** - Auto-discovery and configuration of IP cameras
+- **Attendance Tracking** - Automated check-in/check-out with reporting
+- **Employee Management** - Complete CRUD operations for staff
+- **Live Monitoring** - Real-time camera feeds with detection overlays
 
-### Frontend Features
-- **Modern React UI** with TypeScript and Tailwind CSS
-- **Role-based Dashboards** (Super Admin, Admin, Employee)
-- **Real-time Camera Feeds** with live face detection overlays
-- **Employee Management** with drag-and-drop face enrollment
-- **Attendance Analytics** with charts and reporting
-- **Camera Configuration** with tripwire management
-- **Department Management** with organizational structure
-- **Live Activity Feed** with WebSocket integration
-- **Responsive Design** optimized for all devices
+### 🔧 Technical Features
+- **ONVIF Camera Discovery** - Automatic network camera detection
+- **Tripwire Detection** - Configurable entry/exit zones
+- **WebSocket Support** - Real-time activity updates
+- **Database Management** - SQLite with SQLAlchemy ORM
+- **JWT Authentication** - Secure token-based authentication
+- **Docker Support** - Containerized deployment option
 
-## 🏗️ System Architecture
+## 🚀 Quick Start
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend │    │  FastAPI Backend │    │ Face Tracking   │
-│   (Port 3000)   │    │   (Port 8000)    │    │    System       │
-│                 │    │                 │    │                 │
-│ • TypeScript    │◄──►│ • REST API      │◄──►│ • InsightFace   │
-│ • Tailwind CSS  │    │ • WebSockets    │    │ • OpenCV        │
-│ • Zustand Store │    │ • JWT Auth      │    │ • FAISS Index   │
-│ • React Router  │    │ • SQLAlchemy    │    │ • ByteTracker   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                        ┌─────────────────┐
-                        │ PostgreSQL DB   │
-                        │                 │
-                        │ • User Accounts │
-                        │ • Employees     │
-                        │ • Departments   │
-                        │ • Attendance    │
-                        │ • Face Data     │
-                        │ • Cameras       │
-                        │ • Tripwires     │
-                        └─────────────────┘
-```
+### 1. Installation
 
-## 📋 Prerequisites
-
-### Required Software
-- **Python 3.8+** with pip
-- **Node.js 16+** with npm
-- **PostgreSQL 12+** database server
-- **Git** for version control
-
-### System Requirements
-- **RAM**: Minimum 4GB, Recommended 8GB+
-- **Storage**: 2GB+ available space
-- **GPU**: Optional but recommended for face recognition (CUDA compatible)
-- **Camera**: USB webcam or IP camera with RTSP/HTTP stream support
-
-### Python Dependencies
-The system requires several computer vision and machine learning libraries:
-- **OpenCV** (`cv2`) for image processing
-- **InsightFace** for face recognition models
-- **FAISS** for fast similarity search
-- **PyTorch** for deep learning models
-- **ByteTracker** for object tracking
-- **FastAPI** for the web framework
-- **SQLAlchemy** for database operations
-
-## 🚀 Installation & Setup
-
-### 1. Clone the Repository
 ```bash
+# Clone the repository
 git clone <repository-url>
 cd face-recognition-attendance-system
-```
 
-### 2. Set Up PostgreSQL Database
-```bash
-# Install PostgreSQL (Ubuntu/Debian)
-sudo apt update
-sudo apt install postgresql postgresql-contrib
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate  # Windows
 
-# Create database and user
-sudo -u postgres psql
-CREATE DATABASE frs_db;
-CREATE USER frs_user WITH PASSWORD 'frs_password';
-GRANT ALL PRIVILEGES ON DATABASE frs_db TO frs_user;
-\q
-```
-
-### 3. Configure Environment Variables
-```bash
-# Copy and edit the environment file
-cp .env.example .env
-
-# Edit .env with your configuration:
-nano .env
-```
-
-**Environment Configuration (.env files):**
-
-The system uses multiple .env files for configuration:
-- `.env` - Root configuration (shared settings)
-- `backend/.env` - Backend-specific settings  
-- `frontend/.env` - Frontend-specific settings
-
-**Setup .env files:**
-```bash
-# Copy template files and customize
-cp .env.example .env
-cp backend/.env.example backend/.env  
-cp frontend/.env.example frontend/.env
-
-# Edit with your database credentials
-nano .env
-nano backend/.env
-```
-
-**Key configuration options:**
-```env
-# Database Configuration (PostgreSQL)
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=face_attendance_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-
-# Security & JWT
-SECRET_KEY=your-secret-key-change-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-
-# Application Settings
-ENVIRONMENT=development
-DEBUG=true
-LOG_LEVEL=INFO
-
-# Face Recognition Settings
-FACE_RECOGNITION_TOLERANCE=0.6
-FACE_DETECTION_MODEL=hog
-FACE_ENCODING_MODEL=large
-
-# Camera Settings
-DEFAULT_CAMERA_ID=0
-MAX_CONCURRENT_STREAMS=5
-
-# Frontend API URL
-REACT_APP_API_URL=http://localhost:8000
-```
-
-### 4. Install Dependencies
-```bash
-# Run the automated setup script
-chmod +x setup_dev.sh
-./setup_dev.sh
-
-# Or install manually:
-# Backend dependencies
+# Install dependencies
 pip install -r requirements.txt
-
-# Frontend dependencies
-cd frontend && npm install && cd ..
 ```
 
-### 5. Initialize Database
+### 2. Start the System
+
 ```bash
-# Initialize database with tables and sample data
-python start_unified_server.py --init-db
+# Start the unified server with face tracking enabled
+python start_unified_server.py --enable-fts
+
+# Or start API only (without face detection)
+python start_server.py
 ```
 
-### 6. Test Installation
+### 3. Access the Application
+
+- **Web Interface**: http://localhost:3000
+- **API Documentation**: http://localhost:8000/docs
+- **Admin Panel**: Login with super admin credentials
+
+### 4. Default Login Credentials
+
+```
+Username: admin
+Password: admin
+Role: Super Admin
+```
+
+## 📋 System Requirements
+
+### Minimum Requirements
+- **OS**: Windows 10/11, Ubuntu 18+, macOS 10.14+
+- **Python**: 3.8 or higher
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 2GB free space
+- **Network**: For IP camera connectivity
+
+### Recommended Requirements
+- **RAM**: 16GB+ for multiple cameras
+- **GPU**: NVIDIA GPU for accelerated processing
+- **CPU**: Multi-core processor (Intel i5/AMD Ryzen 5+)
+
+## 🔧 Detailed Installation
+
+### Method 1: Standard Installation
+
 ```bash
-# Verify all components are working
-python test_installation.py
+# Install core dependencies first
+pip install fastapi uvicorn sqlalchemy requests
+
+# Install computer vision libraries
+pip install opencv-python numpy Pillow
+
+# Install face recognition libraries
+pip install onnxruntime faiss-cpu insightface
 ```
 
-## 📁 Project Structure
+### Method 2: GPU Accelerated Installation
 
-```
-face-recognition-attendance-system/
-├── backend/                     # FastAPI backend application
-│   ├── app/                     # Main application
-│   │   ├── routers/             # API route handlers
-│   │   │   ├── auth.py          # Authentication endpoints
-│   │   │   ├── employees.py     # Employee management
-│   │   │   ├── attendance.py    # Attendance tracking
-│   │   │   ├── cameras.py       # Camera management
-│   │   │   ├── departments.py   # Department management
-│   │   │   ├── streaming.py     # Live camera streams
-│   │   │   └── system.py        # System management
-│   │   ├── main.py              # FastAPI application entry point
-│   │   ├── config.py            # Application configuration
-│   │   ├── schemas.py           # Pydantic data models
-│   │   ├── security.py          # Authentication utilities
-│   │   └── dependencies.py      # Dependency injection
-│   ├── core/                    # Core business logic
-│   │   ├── fts_system.py        # Face Tracking System
-│   │   └── face_enroller.py     # Face enrollment logic
-│   ├── db/                      # Database layer
-│   │   ├── db_models.py         # SQLAlchemy models
-│   │   ├── db_config.py         # Database configuration
-│   │   └── db_manager.py        # Database operations
-│   ├── utils/                   # Utility modules
-│   │   ├── camera_discovery.py  # ONVIF camera discovery
-│   │   ├── camera_config_loader.py # Configuration loader
-│   │   ├── logging.py           # Logging utilities
-│   │   └── security.py          # Security utilities
-│   ├── tasks/                   # Background tasks
-│   │   └── camera_tasks.py      # Camera processing tasks
-│   └── init_db.py               # Database initialization script
-├── frontend/                    # React frontend application
-│   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   │   ├── ui/              # Base UI components
-│   │   │   ├── layout/          # Layout components
-│   │   │   ├── camera/          # Camera components
-│   │   │   └── admin/           # Admin components
-│   │   ├── pages/               # Page components
-│   │   │   ├── login/           # Login page
-│   │   │   ├── super-admin/     # Super admin pages
-│   │   │   ├── admin/           # Admin pages
-│   │   │   └── employee/        # Employee pages
-│   │   ├── store/               # Zustand state management
-│   │   ├── services/            # API service layer
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── types/               # TypeScript type definitions
-│   │   └── utils/               # Utility functions
-│   ├── public/                  # Static assets
-│   ├── package.json             # Node.js dependencies
-│   └── tailwind.config.js       # Tailwind CSS configuration
-├── start_unified_server.py      # Main server startup script
-├── start_face_detection.py      # Face detection startup utility
-├── start_server.py              # Alternative server startup
-├── setup_dev.sh                 # Development setup script
-├── test_installation.py         # Installation verification
-├── verify_imports.py            # Import verification utility
-├── package.json                 # Root package.json with scripts
-├── requirements.txt             # Python dependencies
-└── README.md                    # This documentation
+```bash
+# For NVIDIA GPU acceleration
+pip install faiss-gpu onnxruntime-gpu
+
+# Verify CUDA compatibility
+python -c "import torch; print(torch.cuda.is_available())"
 ```
 
-## 🔧 Configuration
+### Method 3: Docker Installation
 
-### Database Configuration
-The system uses PostgreSQL as the primary database. Key configuration options in `backend/app/config.py`:
+```bash
+# Build the container
+docker build -t face-recognition-attendance .
 
-- **Connection Settings**: Host, port, database name, credentials
-- **Connection Pooling**: Pool size, overflow, ping settings
-- **Session Management**: Auto-commit, auto-flush behavior
+# Run the container
+docker run -p 8000:8000 -p 3000:3000 face-recognition-attendance
+```
 
-### Face Recognition Configuration
-Advanced settings for the face recognition system:
+## 🎛️ Configuration
 
-- **Models**: InsightFace models for face detection and recognition
-- **Thresholds**: Confidence thresholds for face matching
-- **Processing**: GPU settings, batch size, optimization flags
-- **Storage**: Face embedding storage and indexing with FAISS
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Database Configuration
+DATABASE_URL=sqlite:///./backend/face_attendance.db
+
+# Security Settings
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# FTS Settings
+FTS_AUTO_START=true
+FTS_STARTUP_DELAY=3
+
+# Server Settings
+DEBUG=true
+CORS_ORIGINS=["http://localhost:3000"]
+```
 
 ### Camera Configuration
-Camera system supports various input sources:
 
-- **USB Cameras**: Direct connection via device ID (0, 1, 2...)
-- **IP Cameras**: RTSP and HTTP streams with authentication
-- **ONVIF Cameras**: Professional cameras with discovery protocol
-- **Network Cameras**: Custom URL configurations
+The system comes with pre-configured test cameras:
 
-## 🎮 Starting the System
-
-**📋 For the complete setup guide, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md) (978 lines)**
-
-### ⚡ 5-Minute Quick Start
-```bash
-# 1. Copy environment files
-cp .env.example .env && cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env
-
-# 2. Install all dependencies
-npm run install:all
-
-# 3. Setup PostgreSQL database
-npm run setup:postgresql && npm run init:db
-
-# 4. Start both backend and frontend
-npm run dev
+```python
+# Test cameras (modify IP addresses for your network)
+Main Entrance Camera: 192.168.1.100
+Exit Door Camera: 192.168.1.101
+Conference Room Camera: 192.168.1.102
 ```
 
-**🌐 Access:** Frontend: http://localhost:3000 | API: http://localhost:8000/docs  
-**👤 Login:** `admin` / `admin123`
+## 📖 Usage Guide
 
-### 📚 Documentation Quick Links
-- **[📘 Complete Setup Guide](SETUP_GUIDE.md)** - Comprehensive setup instructions
-- **[⚡ Quick Reference](QUICK_START.md)** - Essential commands and fixes
-- **[🔧 Environment Setup](ENV_SETUP.md)** - Environment configuration
-- **[🛠️ Port Fixes](PORT_CONFLICT_FIX.md)** - Port conflict solutions
+### Super Admin Functions
 
-### Traditional Start (Alternative)
-```bash
-# Start both backend and frontend
-npm run dev
-```
+1. **User Management**
+   - Create/edit/delete user accounts
+   - Assign roles and permissions
+   - View user activity logs
 
-### Individual Components
-```bash
-# Backend only (with face tracking)
-python start_unified_server.py
+2. **Camera Management**
+   - Discover network cameras
+   - Configure camera settings
+   - Set up tripwire detection zones
+   - Monitor camera status
 
-# Backend with auto-reload (development)
-python start_unified_server.py --reload
+3. **System Management**
+   - Start/stop face tracking system
+   - View system performance metrics
+   - Access system logs
 
-# Frontend only
-cd frontend && npm start
+### Admin Functions
 
-# Initialize database only
-python start_unified_server.py --init-db
-```
+1. **Employee Management**
+   - Add/edit employee profiles
+   - Upload employee photos for recognition
+   - Manage department assignments
 
-### Using Package Scripts
-```bash
-# Install all dependencies
-npm run install:all
+2. **Attendance Monitoring**
+   - View real-time attendance status
+   - Generate attendance reports
+   - Monitor entry/exit activities
 
-# Start development servers
-npm run dev
+3. **Live Monitoring**
+   - View live camera feeds
+   - See real-time face detection
+   - Monitor system alerts
 
-# Build for production
-npm run build
+### Employee Functions
 
-# Run tests
-npm run test:frontend
-npm run test:backend
-```
+1. **Personal Dashboard**
+   - View personal attendance history
+   - Check current status (in/out)
+   - Update profile information
 
-### Access URLs
-- **Frontend Application**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Alternative API Docs**: http://localhost:8000/redoc
-
-### Default Login Credentials
-| Role | Username | Password | Permissions |
-|------|----------|----------|-------------|
-| Super Admin | `superadmin` | `admin123` | Full system access |
-| Admin | `admin` | `admin123` | Employee & camera management |
-| Employee | `employee` | `employee123` | Personal dashboard only |
-
-## 🎯 User Roles & Permissions
-
-### Super Admin
-- **Complete System Control**: All features and settings
-- **User Management**: Create, edit, delete user accounts
-- **System Configuration**: Database, cameras, global settings
-- **Department Management**: Create and manage organizational structure
-- **Advanced Analytics**: Comprehensive reporting and insights
-- **Camera Discovery**: Network scanning and ONVIF discovery
-
-### Admin
-- **Employee Management**: Enroll faces, manage employee data
-- **Attendance Tracking**: View and manage attendance records
-- **Camera Management**: Configure cameras and tripwires
-- **Department Access**: Manage assigned departments
-- **Live Monitoring**: Real-time face detection and tracking
-- **Basic Analytics**: Attendance reports and statistics
-
-### Employee
-- **Personal Dashboard**: View own attendance history
-- **Attendance Status**: Check current status and daily summary
-- **Colleague Presence**: See who's currently present
-- **Profile Management**: Update personal information
-- **Limited Analytics**: Personal attendance patterns
-
-## 📚 API Documentation
-
-### Core Endpoints
-
-#### Authentication (`/auth`)
-- `POST /auth/login` - User authentication with JWT tokens
-- `POST /auth/logout` - Secure logout and token invalidation
-- `GET /auth/me` - Get current user profile and permissions
-
-#### Employee Management (`/employees`)
-- `GET /employees/` - List employees with filtering and pagination
-- `POST /employees/` - Create new employee record
-- `PUT /employees/{id}` - Update employee information
-- `DELETE /employees/{id}` - Remove employee (admin only)
-- `POST /employees/enroll` - Enroll face with image upload
-
-#### Attendance (`/attendance`)
-- `GET /attendance/` - Get attendance records with filters
-- `POST /attendance/manual` - Manual attendance entry
-- `GET /attendance/summary` - Attendance statistics and summaries
-- `GET /attendance/employee/{id}` - Individual employee history
-
-#### Camera Management (`/cameras`)
-- `POST /cameras/discover` - ONVIF network camera discovery
-- `GET /cameras/` - List configured cameras
-- `POST /cameras/` - Add new camera configuration
-- `PUT /cameras/{id}` - Update camera settings
-- `DELETE /cameras/{id}` - Remove camera configuration
-- `POST /cameras/{id}/tripwires` - Configure detection zones
-
-#### Departments (`/departments`)
-- `GET /departments/` - List all departments
-- `POST /departments/` - Create new department
-- `PUT /departments/{id}` - Update department information
-- `DELETE /departments/{id}` - Remove department
-
-#### System Management (`/system`)
-- `GET /system/status` - System health and statistics
-- `POST /system/start` - Start face tracking system
-- `POST /system/stop` - Stop face tracking system
-- `GET /system/logs` - System operation logs
-
-#### Streaming (`/stream`)
-- `GET /stream/feed/{camera_id}` - Live camera feed with overlays
-- `GET /stream/cameras` - Available camera streams
-- `POST /stream/test` - Test camera connectivity
-
-## 🔍 Face Recognition System
-
-### Core Technologies
-- **InsightFace**: State-of-the-art face recognition models
-- **FAISS**: Fast similarity search for face embeddings
-- **OpenCV**: Computer vision and image processing
-- **ByteTracker**: Multi-object tracking for video streams
-
-### Face Processing Pipeline
-1. **Face Detection**: Locate faces in camera frames
-2. **Face Alignment**: Normalize face pose and size
-3. **Feature Extraction**: Generate face embeddings
-4. **Database Matching**: Search against enrolled faces using FAISS
-5. **Tracking**: Maintain face identity across frames
-6. **Attendance Recording**: Log recognized employees
-
-### Performance Features
-- **Multi-GPU Support**: Distribute processing across multiple GPUs
-- **Batch Processing**: Process multiple faces simultaneously
-- **Real-time Processing**: Low-latency face recognition (< 100ms)
-- **Quality Filtering**: Ensure high-quality face captures
-- **Confidence Scoring**: Reliability metrics for each recognition
-
-### Starting Face Recognition
-```bash
-# Automatic start with server
-python start_unified_server.py
-
-# Manual start via API
-curl -X POST "http://localhost:8000/system/start" \
-  -H "Authorization: Bearer <admin_token>"
-
-# Using utility script
-python start_face_detection.py start
-```
-
-## 📹 Camera Management
+## 🔍 Camera Setup
 
 ### Supported Camera Types
-- **USB Webcams**: Direct connection via device ID (0, 1, 2...)
-- **IP Cameras**: RTSP and HTTP streams with authentication
-- **ONVIF Cameras**: Professional cameras with discovery protocol
-- **Network Cameras**: Custom URL configurations
 
-### ONVIF Discovery
-Automatic network scanning to discover professional cameras:
+1. **IP Cameras with RTSP**
+   ```
+   Format: rtsp://username:password@ip:554/stream1
+   Ports: 554, 8554 (common)
+   ```
 
-```bash
-# Discover cameras on network
-curl -X POST "http://localhost:8000/cameras/discover" \
-  -H "Authorization: Bearer <admin_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"network_range": "192.168.1.0/24", "timeout": 10}'
+2. **ONVIF Compatible Cameras**
+   - Auto-discovery supported
+   - Manufacturer info extraction
+   - Stream URL detection
+
+3. **USB/Webcams**
+   - Use camera ID (0, 1, 2, etc.)
+   - Local video devices
+
+### Camera Discovery
+
+1. Navigate to Camera Management
+2. Click "Discover Cameras"
+3. Enter network range (e.g., 192.168.1.0/24)
+4. System will auto-detect compatible cameras
+5. Configure discovered cameras
+
+### Manual Camera Configuration
+
+```python
+# Example camera configuration
+{
+    "camera_name": "Main Entrance",
+    "camera_type": "entry",
+    "ip_address": "192.168.1.100",
+    "stream_url": "rtsp://admin:password@192.168.1.100:554/stream1",
+    "username": "admin",
+    "password": "password",
+    "resolution_width": 1920,
+    "resolution_height": 1080,
+    "fps": 30,
+    "is_active": true
+}
 ```
 
-### Tripwire Configuration
-Set up detection zones for accurate attendance tracking:
+## 🧪 Testing Installation
 
-- **Horizontal Lines**: Detect people crossing doorways
-- **Vertical Lines**: Monitor hallway traffic
-- **Entry/Exit Zones**: Distinguish between arrivals and departures
-- **Multiple Zones**: Complex area monitoring
+Run these commands to verify your setup:
 
-### Camera Management Workflow
-1. **Discovery**: Scan network for available cameras
-2. **Configuration**: Set names, locations, and stream settings
-3. **Tripwire Setup**: Define detection zones
-4. **Activation**: Enable cameras for face tracking
-5. **Monitoring**: Real-time status and performance tracking
-
-## 🛠️ Development
-
-### Backend Development
 ```bash
-# Install development dependencies
+# Test Python imports
+python -c "import cv2; print('OpenCV:', cv2.__version__)"
+python -c "import numpy; print('NumPy:', numpy.__version__)"
+python -c "import insightface; print('InsightFace: OK')"
+python -c "import faiss; print('FAISS: OK')"
+
+# Test camera access (if USB camera available)
+python -c "import cv2; cap = cv2.VideoCapture(0); print('Camera:', cap.isOpened()); cap.release()"
+
+# Test server startup
+python -c "from backend.app.main import app; print('FastAPI: OK')"
+```
+
+## 🔧 Troubleshooting
+
+### Common Installation Issues
+
+#### Issue 1: "ModuleNotFoundError: No module named 'cv2'"
+```bash
+pip uninstall opencv-python opencv-contrib-python opencv-headless
+pip install opencv-python
+```
+
+#### Issue 2: "Microsoft Visual C++ 14.0 is required" (Windows)
+- Download and install Microsoft C++ Build Tools
+- Or install Visual Studio Community with C++ support
+
+#### Issue 3: Dependency conflicts with scipy/albumentations
+```bash
+# Remove conflicting packages
+pip uninstall scipy albumentations -y
+
+# Install compatible versions
+pip install scipy>=1.10.0
+
+# Retry installation
 pip install -r requirements.txt
-
-# Start with auto-reload
-python start_unified_server.py --reload
-
-# Run specific module
-python -m backend.app.main
-
-# Database migrations
-alembic revision --autogenerate -m "Description"
-alembic upgrade head
-
-# Run tests
-cd backend && pytest tests/
-
-# Code formatting
-black backend/
-isort backend/
 ```
 
-### Frontend Development
+#### Issue 4: FAISS installation fails
 ```bash
-# Install dependencies
-cd frontend && npm install
+# Try CPU version first
+pip install faiss-cpu
 
-# Start development server
-npm start
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-
-# Lint and format
-npm run lint
-npm run format
-
-# Type checking
-npx tsc --noEmit
+# For GPU support (requires CUDA)
+pip install faiss-gpu
 ```
 
-### Code Style Guidelines
-- **Python**: PEP 8 compliance, Black formatting, type hints
-- **TypeScript**: ESLint configuration, Prettier formatting
-- **Git**: Conventional commit messages
-- **Documentation**: Comprehensive docstrings and comments
-
-### Adding New Features
-1. **Backend Routes**: Add to `backend/app/routers/`
-2. **Database Models**: Update `backend/db/db_models.py`
-3. **Frontend Components**: Add to `frontend/src/components/`
-4. **API Types**: Update `frontend/src/types/`
-5. **Tests**: Add unit and integration tests
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### Port Already in Use Error (Error 10048)
-This error occurs when port 8000 is already being used by another process.
-
-**Quick Fix:**
+#### Issue 5: InsightFace model download fails
 ```bash
-# Method 1: Use automatic cleanup
-npm run start:force
-
-# Method 2: Manual cleanup
-npm run cleanup:port
-
-# Method 3: Run cleanup script
-# Linux/Mac:
-./fix_port_conflict.sh
-
-# Windows:
-fix_port_conflict.bat
-
-# Method 4: Use different port
-python start_unified_server.py --port 8001
+# Set environment variable for model downloads
+export INSIGHTFACE_MODEL_PATH=./models  # Linux/Mac
+set INSIGHTFACE_MODEL_PATH=./models     # Windows
 ```
 
-**Manual Port Cleanup:**
-```bash
-# Windows:
-netstat -ano | findstr :8000
-taskkill /f /pid <PID>
-
-# Linux/Mac:
-lsof -ti:8000 | xargs kill -9
-```
-
-#### Database Connection Errors
-```bash
-# Test connection
-python -c "from backend.db.db_config import test_connection; test_connection()"
-
-# Check PostgreSQL status
-sudo systemctl status postgresql
-
-# Reset database
-python start_unified_server.py --init-db
-```
-
-#### Face Recognition Issues
-- **Poor Lighting**: Ensure adequate lighting for face detection
-- **Camera Quality**: Use cameras with at least 720p resolution
-- **Face Enrollment**: Verify faces are properly enrolled with good quality images
-- **GPU Memory**: Monitor GPU memory usage for multi-camera setups
+### Runtime Issues
 
 #### Camera Connection Problems
+1. Check camera IP address and credentials
+2. Verify RTSP URL format
+3. Test connectivity: `ping <camera-ip>`
+4. Check firewall settings
+5. Verify camera is ONVIF compatible
+
+#### Face Detection Not Working
+1. Ensure all AI libraries are installed
+2. Check GPU drivers if using GPU acceleration
+3. Verify camera resolution and FPS settings
+4. Check system resources (RAM/CPU usage)
+
+#### Performance Issues
+1. **Reduce camera resolution** - Lower from 1080p to 720p
+2. **Decrease FPS** - Set to 15-20 FPS instead of 30
+3. **Enable GPU acceleration** - Install GPU versions of libraries
+4. **Limit active cameras** - Process fewer cameras simultaneously
+
+### Development Issues
+
+#### Port Conflicts
 ```bash
-# Test camera access
-python -c "import cv2; cap = cv2.VideoCapture(0); print(cap.isOpened())"
-
-# Check camera permissions
-sudo usermod -a -G video $USER
-
-# List available cameras
-ls /dev/video*
+# Kill processes using ports 8000 or 3000
+python cleanup_port.py
+# or manually:
+netstat -ano | findstr :8000  # Windows
+lsof -ti:8000 | xargs kill -9  # Linux/Mac
 ```
 
-#### Import Errors
+#### Database Issues
 ```bash
-# Clear Python cache
-find . -name "__pycache__" -type d -exec rm -rf {} +
-find . -name "*.pyc" -delete
-
-# Verify imports
-python verify_imports.py
-
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
+# Reset database
+rm backend/face_attendance.db
+python backend/init_db.py
 ```
 
-#### Frontend Issues
-```bash
-# Clear npm cache
-npm cache clean --force
+## 📊 Performance Optimization
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
+### CPU Optimization
+```python
+# Reduce frame processing
+FRAME_SKIP = 2  # Process every 2nd frame
+DETECTION_INTERVAL = 0.1  # 100ms between detections
 
-# Check for port conflicts
-lsof -i :3000
+# Lower resolution
+CAMERA_WIDTH = 1280  # Instead of 1920
+CAMERA_HEIGHT = 720   # Instead of 1080
 ```
 
-### System Health Checks
+### GPU Acceleration
 ```bash
-# Complete system verification
-python test_installation.py
+# Install GPU versions
+pip install faiss-gpu onnxruntime-gpu torch torchvision
 
-# Check all services
-curl http://localhost:8000/health
-curl http://localhost:3000  # Should serve React app
+# Verify GPU availability
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
 
-# Monitor logs
+### Memory Management
+- **Monitor RAM usage**: Task Manager/htop
+- **Limit concurrent cameras**: Max 4 cameras on 8GB RAM
+- **Enable frame buffering**: Reduce memory spikes
+
+## 🐳 Docker Deployment
+
+### Build Container
+```bash
+# Build the image
+docker build -t face-recognition-system .
+
+# Run the container
+docker run -d \
+  --name face-attendance \
+  -p 8000:8000 \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  face-recognition-system
+```
+
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  face-attendance:
+    build: .
+    ports:
+      - "8000:8000"
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - FTS_AUTO_START=true
+      - DEBUG=false
+```
+
+## 🔐 Security Considerations
+
+### Production Deployment
+1. **Change default credentials** immediately
+2. **Use strong SECRET_KEY** in environment variables
+3. **Enable HTTPS** with SSL certificates
+4. **Configure firewall** rules for camera networks
+5. **Regular security updates** for dependencies
+
+### Data Privacy
+- Face embeddings are stored as mathematical vectors
+- Original images are not permanently stored
+- Employee data is encrypted in database
+- Access logs track all system interactions
+
+## 📈 Monitoring and Logging
+
+### System Logs
+```bash
+# View application logs
 tail -f backend/logs/app.log
+
+# View face tracking logs
+tail -f backend/logs/fts.log
+
+# Check system status
+curl http://localhost:8000/system/status
 ```
 
-## 📊 System Monitoring
-
-### Real-time Metrics
-- **System Status**: CPU, memory, GPU utilization
-- **Camera Performance**: Frame rates, detection accuracy
-- **Face Recognition**: Processing speed, match confidence
-- **Database Performance**: Query times, connection pool status
-- **Network Activity**: Stream bandwidth, API response times
-
-### Logging
-- **Application Logs**: `backend/logs/app.log`
-- **Access Logs**: HTTP request/response logging
-- **Error Tracking**: Detailed error messages and stack traces
-- **Performance Metrics**: Processing times and resource usage
-
-### Health Endpoints
-- `GET /health` - Basic health check
-- `GET /system/status` - Detailed system information
-- `GET /system/logs` - Recent log entries
-
-## 🚀 Deployment
-
-### Production Preparation
-1. **Environment Configuration**
-   ```bash
-   # Update .env for production
-   DEBUG=false
-   ENVIRONMENT=production
-   SECRET_KEY=<secure-random-key>
-   ```
-
-2. **Database Setup**
-   ```bash
-   # Create production database
-   createdb face_attendance_prod
-   
-   # Run migrations
-   python start_unified_server.py --init-db
-   ```
-
-3. **Build Frontend**
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-### Docker Deployment
-```dockerfile
-# Backend Dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY backend/ ./backend/
-CMD ["python", "start_unified_server.py"]
-```
-
-### Production Server
-```bash
-# Install Gunicorn
-pip install gunicorn
-
-# Start production server
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:8000 \
-  backend.app.main:app
-```
-
-### Performance Optimization
-- **Database**: Connection pooling, query optimization
-- **Caching**: Redis for session management
-- **Load Balancing**: Nginx for multiple server instances
-- **CDN**: Static asset delivery optimization
-- **GPU**: CUDA optimization for face recognition
+### Performance Metrics
+- CPU/Memory usage via `/system/status` endpoint
+- Camera processing rates in logs
+- Face detection accuracy metrics
+- Database query performance
 
 ## 🤝 Contributing
 
 ### Development Setup
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes following the style guidelines
-4. Add tests for new functionality
-5. Commit with conventional messages: `git commit -m 'feat: add amazing feature'`
-6. Push to your branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+pip install black flake8 mypy
 
-### Code Review Process
-- All changes require review from maintainers
-- Automated tests must pass
-- Code coverage should not decrease
-- Documentation must be updated for new features
+# Run tests
+pytest
 
-### Bug Reports
-When reporting bugs, please include:
-- System information (OS, Python version, Node.js version)
-- Steps to reproduce the issue
-- Expected vs actual behavior
-- Error messages and logs
-- Camera/hardware specifications if relevant
+# Format code
+black .
+
+# Type checking
+mypy backend/
+```
+
+### Project Structure
+```
+├── backend/          # FastAPI backend
+│   ├── app/         # Main application
+│   ├── core/        # Face tracking system
+│   ├── db/          # Database models
+│   └── utils/       # Utilities
+├── frontend/        # React frontend
+│   ├── src/         # Source code
+│   └── public/      # Static files
+├── models/          # AI models (auto-downloaded)
+└── data/           # Application data
+```
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **InsightFace** for advanced face recognition models
-- **FastAPI** for the high-performance web framework
-- **React** for the modern frontend framework
-- **OpenCV** for computer vision capabilities
-- **FAISS** for efficient similarity search
-- **PostgreSQL** for robust data storage
-- **Tailwind CSS** for utility-first styling
-- **ByteTracker** for object tracking algorithms
+### Getting Help
+1. **Check this README** - Most issues are covered here
+2. **Review logs** - Check console output for error details
+3. **Test installation** - Use the test commands provided
+4. **Check GitHub Issues** - Search for similar problems
 
-## 📞 Support
+### Creating Issues
+When reporting bugs, include:
+- Operating system and Python version
+- Complete error messages
+- Steps to reproduce the issue
+- Output of test commands
 
-For questions, issues, or contributions:
-- **GitHub Issues**: Report bugs and request features
-- **Documentation**: Check `/docs` endpoint for API details
-- **Community**: Join discussions on GitHub
-- **Email**: Contact maintainers for security issues
+## 🚀 What's Next?
+
+### Planned Features
+- [ ] Mobile app for employee check-in
+- [ ] Advanced analytics and reporting
+- [ ] Integration with HR systems
+- [ ] Cloud deployment options
+- [ ] Multi-tenant support
+- [ ] Advanced face anti-spoofing
+
+### Current Status
+- ✅ Core face recognition system
+- ✅ Web dashboard and API
+- ✅ Camera management
+- ✅ Real-time monitoring
+- ✅ Role-based access control
+- ⚠️ AI model optimization (ongoing)
+- ⚠️ Performance tuning (ongoing)
 
 ---
 
-**Built with ❤️ for modern attendance management and security applications**
+**Ready to get started?** Run `python start_unified_server.py --enable-fts` and open http://localhost:3000!
