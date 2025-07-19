@@ -50,20 +50,53 @@ def initialize_database():
     
     db = next(get_db())
     try:
-        # Check if admin user already exists
-        existing_admin = db.query(UserAccount).filter(UserAccount.username == "admin").first()
-        if not existing_admin:
-            # Create super admin user
-            admin_user = UserAccount(
-                username="admin",
-                hashed_password=get_password_hash("admin123"),
-                role="super_admin",
-                is_active=True
-            )
-            db.add(admin_user)
-            print("✅ Created super admin user (username: admin, password: admin123)")
-        else:
-            print("ℹ️  Super admin user already exists")
+        # Create user accounts for all roles
+        users_to_create = [
+            {
+                "username": "admin",
+                "password": "admin123",
+                "role": "super_admin",
+                "employee_id": None,
+                "description": "Super Admin user"
+            },
+            {
+                "username": "hr_manager",
+                "password": "hr123",
+                "role": "admin",
+                "employee_id": "EMP002",
+                "description": "Admin user (HR Manager)"
+            },
+            {
+                "username": "john.doe",
+                "password": "john123",
+                "role": "employee",
+                "employee_id": "EMP001",
+                "description": "Employee user (John Doe)"
+            },
+            {
+                "username": "mike.johnson",
+                "password": "mike123",
+                "role": "employee",
+                "employee_id": "EMP003",
+                "description": "Employee user (Mike Johnson)"
+            }
+        ]
+        
+        for user_data in users_to_create:
+            existing_user = db.query(UserAccount).filter(UserAccount.username == user_data["username"]).first()
+            if not existing_user:
+                # Create user account
+                user = UserAccount(
+                    username=user_data["username"],
+                    hashed_password=get_password_hash(user_data["password"]),
+                    role=user_data["role"],
+                    employee_id=user_data["employee_id"],
+                    is_active=True
+                )
+                db.add(user)
+                print(f"✅ Created {user_data['description']} (username: {user_data['username']}, password: {user_data['password']})")
+            else:
+                print(f"ℹ️  User {user_data['username']} already exists")
         
         # Check if sample employees exist
         existing_employee = db.query(Employee).filter(Employee.employee_id == "EMP001").first()
@@ -153,9 +186,15 @@ def main():
         print("=" * 70)
         print("📋 Summary:")
         print("   • Database tables created")
-        print("   • Super admin user: admin / admin123")
         print("   • Sample employees added")
         print("   • Sample camera configuration added")
+        print("   • User accounts created for all roles")
+        print("=" * 70)
+        print("🔑 Login Credentials:")
+        print("   Super Admin: admin / admin123")
+        print("   Admin (HR):  hr_manager / hr123") 
+        print("   Employee:    john.doe / john123")
+        print("   Employee:    mike.johnson / mike123")
         print("=" * 70)
         print("🚀 You can now start the server!")
     else:

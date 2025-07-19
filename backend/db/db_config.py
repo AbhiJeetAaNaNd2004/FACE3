@@ -1,8 +1,12 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import logging
 from typing import Generator
+
+# Load environment variables
+load_dotenv()
 
 # Import the Base from our models
 from .db_models import Base
