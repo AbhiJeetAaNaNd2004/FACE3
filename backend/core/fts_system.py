@@ -81,6 +81,7 @@ class CameraConfig:
     tripwires: List[TripwireConfig]
     resolution: tuple
     fps: int
+    camera_name: Optional[str] = None
 
 @dataclass
 class GlobalTrack:
@@ -179,7 +180,8 @@ def load_camera_configurations() -> List[CameraConfig]:
                 camera_type=db_config.camera_type,
                 tripwires=tripwires,
                 resolution=db_config.resolution,
-                fps=db_config.fps
+                fps=db_config.fps,
+                camera_name=getattr(db_config, 'camera_name', None) or f"Camera {db_config.camera_id}"
             )
             
             cameras.append(camera_config)
@@ -195,7 +197,8 @@ def load_camera_configurations() -> List[CameraConfig]:
                     tripwires=[
                         TripwireConfig(position=0.755551, spacing=0.01, direction="horizontal", name="EntryDetection")],
                     resolution=detected_cam.resolution,
-                    fps=detected_cam.fps
+                    fps=detected_cam.fps,
+                    camera_name=getattr(detected_cam, 'name', f"Camera {detected_cam.camera_id}")
                 )
                 
                 cameras.append(camera_config)

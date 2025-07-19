@@ -31,6 +31,8 @@ class CameraConfig:
     tripwires: List[TripwireConfig]
     resolution: tuple
     fps: int
+    # Optional field for admin convenience
+    camera_name: Optional[str] = None
 
 class CameraConfigLoader:
     """
@@ -144,7 +146,8 @@ class CameraConfigLoader:
                 camera_type=db_camera.camera_type,
                 tripwires=tripwires,
                 resolution=(db_camera.resolution_width, db_camera.resolution_height),
-                fps=db_camera.fps
+                fps=db_camera.fps,
+                camera_name=db_camera.camera_name or f"Camera {db_camera.camera_id}"
             )
             
             return camera_config

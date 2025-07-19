@@ -141,7 +141,7 @@ def check_cameras():
         if cameras:
             print(f"✅ Found {len(cameras)} configured camera(s)")
             for cam in cameras:
-                print(f"   • Camera {cam.camera_id} ({cam.camera_type})")
+                print(f"   • Camera {cam.camera_id}: {cam.camera_name} ({cam.camera_type})")
         else:
             print("⚠️ No cameras configured")
             print("💡 Configure cameras through the web interface first")
