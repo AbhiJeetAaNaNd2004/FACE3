@@ -67,9 +67,15 @@ export const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, still redirect to login
+      navigate('/login');
+    }
   };
 
   // Generate navigation items based on user role

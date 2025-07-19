@@ -60,15 +60,24 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      logout: () => {
-        localStorage.removeItem('access_token');
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+      logout: async () => {
+        try {
+          // Call backend logout endpoint
+          await apiService.logout();
+        } catch (error) {
+          // Continue with logout even if backend call fails
+          console.warn('Backend logout failed:', error);
+        } finally {
+          // Always clear local state
+          localStorage.removeItem('access_token');
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
       },
 
       loadUser: async () => {

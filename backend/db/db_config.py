@@ -1,54 +1,39 @@
 import os
-from sqlalchemy import create_engine
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 import logging
 from typing import Generator
+
+# Load environment variables
+load_dotenv()
 
 # Import the Base from our models
 from .db_models import Base
 
-# Database configuration - Using SQLite for simplicity
-DATABASE_TYPE = os.getenv('DATABASE_TYPE', 'sqlite')
+# PostgreSQL configuration only - no SQLite support
+DATABASE_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', '5432'),
+    'database': os.getenv('DB_NAME', 'face_attendance_db'),
+    'username': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', 'password')
+}
 
-if DATABASE_TYPE == 'sqlite':
-    # SQLite configuration
-    DATABASE_PATH = os.getenv('DATABASE_PATH', 'face_attendance.db')
-    DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
-    
-    # Create engine with SQLite settings
-    engine = create_engine(
-        DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={
-            "check_same_thread": False
-        },
-        echo=False
-    )
-else:
-    # PostgreSQL configuration (fallback)
-    DATABASE_CONFIG = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': os.getenv('DB_PORT', '5432'),
-        'database': os.getenv('DB_NAME', 'face_attendance'),
-        'username': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'password')
+DATABASE_URL = f"postgresql://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+
+# Create engine with PostgreSQL settings
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo=False,
+    connect_args={
+        "options": "-c timezone=utc"
     }
-    
-    DATABASE_URL = f"postgresql://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
-    
-    # Create engine with PostgreSQL settings
-    engine = create_engine(
-        DATABASE_URL,
-        pool_size=10,
-        max_overflow=20,
-        pool_pre_ping=True,
-        pool_recycle=3600,
-        echo=False,
-        connect_args={
-            "options": "-c timezone=utc"
-        }
-    )
+)
 
 # Create sessionmaker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -91,3 +76,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def test_connection():
+    """Test database connection"""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        logging.error(f"Database connection failed: {e}")
+        return False

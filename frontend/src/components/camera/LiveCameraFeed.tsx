@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Camera } from '../../types';
-import { useWebSocket } from '../../hooks/useWebSocket';
 
 interface LiveCameraFeedProps {
   camera: Camera;
@@ -15,232 +14,118 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   onError,
   showControls = true
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [detections, setDetections] = useState<any[]>([]);
-
-  // WebSocket connection for real-time updates
-  const { isConnected } = useWebSocket({
-    url: `ws://localhost:8000/ws/camera/${camera.id}`,
-    onMessage: (message) => {
-      if (message.type === 'detection') {
-        setDetections(message.data.detections || []);
-        drawDetections(message.data.detections || []);
-      } else if (message.type === 'frame') {
-        updateVideoFrame(message.data.frame);
-      }
-    },
-    onError: (error) => {
-      console.error('Camera WebSocket error:', error);
-      setError('Failed to connect to camera stream');
-    }
-  });
-
-  const updateVideoFrame = (frameData: string) => {
-    if (videoRef.current) {
-      // Convert base64 frame to blob and create object URL
-      const binary = atob(frameData);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: 'image/jpeg' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create image element and draw to canvas
-      const img = new Image();
-      img.onload = () => {
-        if (canvasRef.current) {
-          const canvas = canvasRef.current;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-          }
-        }
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
-    }
-  };
-
-  const drawDetections = (detections: any[]) => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear previous detections
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw detection boxes
-    detections.forEach(detection => {
-      const { bbox, confidence, class_name, employee_id, employee_name } = detection;
-      
-      if (bbox && bbox.length === 4) {
-        const [x, y, width, height] = bbox;
-        
-        // Draw bounding box
-        ctx.strokeStyle = employee_id ? '#10B981' : '#EF4444'; // Green for recognized, red for unknown
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
-        
-        // Draw label background
-        const label = employee_name || `Unknown (${(confidence * 100).toFixed(1)}%)`;
-        const labelHeight = 20;
-        
-        ctx.fillStyle = employee_id ? '#10B981' : '#EF4444';
-        ctx.fillRect(x, y - labelHeight, ctx.measureText(label).width + 10, labelHeight);
-        
-        // Draw label text
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '12px Arial';
-        ctx.fillText(label, x + 5, y - 5);
-      }
-    });
-  };
-
-  const startStream = async () => {
-    try {
-      setError(null);
-      
-      if (camera.stream_url) {
-        // For RTSP or HTTP streams
-        if (videoRef.current) {
-          videoRef.current.src = camera.stream_url;
-          await videoRef.current.play();
-          setIsPlaying(true);
-        }
-      } else {
-        // For webcam access
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          } 
-        });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setIsPlaying(true);
-        }
-      }
-    } catch (err) {
-      const errorMessage = 'Failed to start camera stream';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      console.error('Camera stream error:', err);
-    }
-  };
-
-  const stopStream = () => {
-    if (videoRef.current) {
-      if (videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      } else {
-        videoRef.current.src = '';
-      }
-      setIsPlaying(false);
-    }
-  };
-
-  const toggleStream = () => {
-    if (isPlaying) {
-      stopStream();
-    } else {
-      startStream();
-    }
-  };
+  const [streamUrl, setStreamUrl] = useState<string>('');
 
   useEffect(() => {
-    return () => {
-      stopStream();
-    };
-  }, []);
+    // Get authentication token
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setError('Authentication required');
+      onError?.('Authentication required');
+      return;
+    }
+
+    // Create stream URL with authentication using the new endpoint
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const url = `${baseUrl}/stream/feed?${camera.id ? `camera_id=${camera.id}&` : ''}auth=${token}`;
+    setStreamUrl(url);
+    setIsLoading(false);
+  }, [camera.id, onError]);
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setError(null);
+  };
+
+  const handleImageError = () => {
+    setIsLoading(false);
+    const errorMsg = `Failed to load stream from camera ${camera.name}`;
+    setError(errorMsg);
+    onError?.(errorMsg);
+  };
+
+  const refreshStream = () => {
+    setIsLoading(true);
+    setError(null);
+    if (imgRef.current) {
+      // Force refresh by updating src with timestamp
+      const token = localStorage.getItem('access_token');
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const url = `${baseUrl}/stream/feed?${camera.id ? `camera_id=${camera.id}&` : ''}auth=${token}&t=${Date.now()}`;
+      imgRef.current.src = url;
+    }
+  };
+
+  if (error) {
+    return (
+      <div className={`bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center ${className}`}>
+        <div className="text-red-600 mb-4">
+          <svg className="mx-auto h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+        {showControls && (
+          <button
+            onClick={refreshStream}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative bg-black rounded-lg overflow-hidden ${className}`}>
-      {/* Video Element (hidden, used for stream source) */}
-      <video
-        ref={videoRef}
-        className="hidden"
-        muted
-        playsInline
-        onError={() => setError('Video stream error')}
-      />
-      
-      {/* Canvas for displaying frames and detections */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full object-contain"
-        style={{ maxHeight: '400px' }}
-      />
-      
-      {/* Overlay Information */}
-      <div className="absolute top-2 left-2">
-        <div className="bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-          {camera.name}
-        </div>
-        {isConnected && (
-          <div className="bg-green-600 bg-opacity-75 text-white px-2 py-1 rounded text-xs mt-1">
-            Live
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Loading camera feed...</p>
           </div>
-        )}
+        </div>
+      )}
+      
+      <img
+        ref={imgRef}
+        src={streamUrl}
+        alt={`Live feed from ${camera.name}`}
+        className="w-full h-full object-cover"
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        style={{ minHeight: '200px' }}
+      />
+      
+      {/* Camera info overlay */}
+      <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+        {camera.name} (ID: {camera.id})
+      </div>
+      
+      {/* Connection status indicator */}
+      <div className="absolute top-2 right-2">
+        <div className={`w-3 h-3 rounded-full ${!error && !isLoading ? 'bg-green-500' : 'bg-red-500'}`} />
       </div>
 
-      {/* Detection Count */}
-      {detections.length > 0 && (
-        <div className="absolute top-2 right-2">
-          <div className="bg-blue-600 bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-            {detections.length} Detection{detections.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="text-red-400 text-center">
-            <div className="text-4xl mb-2">⚠️</div>
-            <div>{error}</div>
-          </div>
-        </div>
-      )}
-
-      {/* No Stream Placeholder */}
-      {!isPlaying && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-          <div className="text-gray-400 text-center">
-            <div className="text-4xl mb-2">📹</div>
-            <div>Camera stream not active</div>
-          </div>
-        </div>
-      )}
-
       {/* Controls */}
-      {showControls && (
-        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+      {showControls && !error && (
+        <div className="absolute bottom-2 right-2 flex space-x-2">
           <button
-            onClick={toggleStream}
-            className={`px-3 py-1 rounded text-xs font-medium ${
-              isPlaying
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
+            onClick={refreshStream}
+            className="bg-black bg-opacity-75 text-white p-2 rounded hover:bg-opacity-90 transition-opacity"
+            title="Refresh stream"
           >
-            {isPlaying ? 'Stop' : 'Start'}
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </button>
-          
-          <div className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-            {camera.location}
-          </div>
         </div>
       )}
     </div>

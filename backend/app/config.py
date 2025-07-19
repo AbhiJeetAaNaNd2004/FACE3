@@ -6,14 +6,14 @@ class Settings(BaseSettings):
     # Database Configuration
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
-    DB_NAME: str = "face_tracking"
+    DB_NAME: str = "face_attendance_db"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "password"
     
     # Security Configuration
-    SECRET_KEY: str = "dev-secret-key-change-in-production"
+    SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Application Configuration
     ENVIRONMENT: str = "development"
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # Face Tracking System Configuration
     FTS_AUTO_START: bool = True  # Auto-start FTS on server startup
     FTS_STARTUP_DELAY: int = 2   # Delay in seconds before starting FTS
+    FACE_TRACKING_AUTO_START: bool = True  # Legacy setting for compatibility
     
     @property
     def DATABASE_URL(self) -> str:
@@ -61,5 +62,6 @@ class Settings(BaseSettings):
         env_file = os.path.join(os.path.dirname(__file__), '..', '.env')
         env_file_encoding = 'utf-8'
         case_sensitive = True
+        extra = 'allow'  # Allow extra fields in configuration
 
 settings = Settings()

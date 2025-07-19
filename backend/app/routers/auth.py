@@ -80,6 +80,15 @@ async def get_current_user_info(current_user: CurrentUser = Depends(get_current_
     """
     return current_user
 
+@router.post("/logout", response_model=MessageResponse)
+async def logout(current_user: CurrentUser = Depends(get_current_active_user)):
+    """
+    Logout endpoint - invalidates the current session
+    Note: Since we're using JWT tokens, this is mainly for frontend state management
+    In a production environment, you might want to maintain a blacklist of tokens
+    """
+    return MessageResponse(message="Successfully logged out")
+
 @router.post("/users/create", response_model=MessageResponse)
 async def create_user(
     user_data: UserAccountCreate,

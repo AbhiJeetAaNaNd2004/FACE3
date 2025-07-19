@@ -17,7 +17,7 @@ class AttendanceStatus(str, Enum):
 class EmployeeBase(BaseModel):
     employee_id: str = Field(..., description="Unique employee identifier")
     name: str = Field(..., description="Employee full name")
-    department: str = Field(..., description="Department name")
+    department_id: int = Field(..., description="Department ID")
     role: str = Field(..., description="Job role/position")
     date_joined: date = Field(..., description="Date when employee joined")
     email: Optional[str] = Field(None, description="Employee email address")
@@ -28,16 +28,22 @@ class EmployeeCreate(EmployeeBase):
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
-    department: Optional[str] = None
+    department_id: Optional[int] = None
     role: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     is_active: Optional[bool] = None
 
+class DepartmentInfo(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+
 class Employee(EmployeeBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    department: Optional[DepartmentInfo] = None
 
     class Config:
         from_attributes = True
@@ -309,12 +315,6 @@ class EmployeeCreate(EmployeeBase):
     def validate_name(cls, v):
         if not v or len(v.strip()) == 0:
             raise ValueError('Name cannot be empty')
-        return v.strip()
-
-    @validator('department')
-    def validate_department(cls, v):
-        if not v or len(v.strip()) == 0:
-            raise ValueError('Department cannot be empty')
         return v.strip()
 
     @validator('role')
