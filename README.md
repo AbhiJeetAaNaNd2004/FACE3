@@ -131,35 +131,55 @@ cp .env.example .env
 nano .env
 ```
 
-**Environment Configuration (.env):**
+**Environment Configuration (.env files):**
+
+The system uses multiple .env files for configuration:
+- `.env` - Root configuration (shared settings)
+- `backend/.env` - Backend-specific settings  
+- `frontend/.env` - Frontend-specific settings
+
+**Setup .env files:**
+```bash
+# Copy template files and customize
+cp .env.example .env
+cp backend/.env.example backend/.env  
+cp frontend/.env.example frontend/.env
+
+# Edit with your database credentials
+nano .env
+nano backend/.env
+```
+
+**Key configuration options:**
 ```env
-# Database Configuration
+# Database Configuration (PostgreSQL)
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=frs_db
-DB_USER=frs_user
-DB_PASSWORD=frs_password
+DB_NAME=face_attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_password
 
-# Security
-SECRET_KEY=your-very-secure-secret-key-change-in-production
-JWT_ALGORITHM=HS256
-JWT_EXPIRATION_HOURS=24
+# Security & JWT
+SECRET_KEY=your-secret-key-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # Application Settings
-DEBUG=true
 ENVIRONMENT=development
+DEBUG=true
 LOG_LEVEL=INFO
 
 # Face Recognition Settings
-FACE_CONFIDENCE_THRESHOLD=0.6
-EMBEDDING_MODEL=facenet
-FACE_DETECTION_MODEL=mtcnn
+FACE_RECOGNITION_TOLERANCE=0.6
+FACE_DETECTION_MODEL=hog
+FACE_ENCODING_MODEL=large
 
 # Camera Settings
 DEFAULT_CAMERA_ID=0
-CAMERA_RESOLUTION_WIDTH=640
-CAMERA_RESOLUTION_HEIGHT=480
-CAMERA_FPS=30
+MAX_CONCURRENT_STREAMS=5
+
+# Frontend API URL
+REACT_APP_API_URL=http://localhost:8000
 ```
 
 ### 4. Install Dependencies
@@ -280,7 +300,33 @@ Camera system supports various input sources:
 
 ## 🎮 Starting the System
 
-### Quick Start (Recommended)
+**📋 For the complete setup guide, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md) (978 lines)**
+
+### ⚡ 5-Minute Quick Start
+```bash
+# 1. Copy environment files
+cp .env.example .env && cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env
+
+# 2. Install all dependencies
+npm run install:all
+
+# 3. Setup PostgreSQL database
+npm run setup:postgresql && npm run init:db
+
+# 4. Start both backend and frontend
+npm run dev
+```
+
+**🌐 Access:** Frontend: http://localhost:3000 | API: http://localhost:8000/docs  
+**👤 Login:** `admin` / `admin123`
+
+### 📚 Documentation Quick Links
+- **[📘 Complete Setup Guide](SETUP_GUIDE.md)** - Comprehensive setup instructions
+- **[⚡ Quick Reference](QUICK_START.md)** - Essential commands and fixes
+- **[🔧 Environment Setup](ENV_SETUP.md)** - Environment configuration
+- **[🛠️ Port Fixes](PORT_CONFLICT_FIX.md)** - Port conflict solutions
+
+### Traditional Start (Alternative)
 ```bash
 # Start both backend and frontend
 npm run dev
@@ -535,6 +581,38 @@ npx tsc --noEmit
 ## 🔍 Troubleshooting
 
 ### Common Issues
+
+#### Port Already in Use Error (Error 10048)
+This error occurs when port 8000 is already being used by another process.
+
+**Quick Fix:**
+```bash
+# Method 1: Use automatic cleanup
+npm run start:force
+
+# Method 2: Manual cleanup
+npm run cleanup:port
+
+# Method 3: Run cleanup script
+# Linux/Mac:
+./fix_port_conflict.sh
+
+# Windows:
+fix_port_conflict.bat
+
+# Method 4: Use different port
+python start_unified_server.py --port 8001
+```
+
+**Manual Port Cleanup:**
+```bash
+# Windows:
+netstat -ano | findstr :8000
+taskkill /f /pid <PID>
+
+# Linux/Mac:
+lsof -ti:8000 | xargs kill -9
+```
 
 #### Database Connection Errors
 ```bash

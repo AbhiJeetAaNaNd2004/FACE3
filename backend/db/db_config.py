@@ -5,8 +5,9 @@ from sqlalchemy.orm import sessionmaker
 import logging
 from typing import Generator
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env and root .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))  # backend/.env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))  # root .env
 
 # Import the Base from our models
 from .db_models import Base
