@@ -79,10 +79,10 @@ class DatabaseManager:
 
             new_embedding = FaceEmbedding(
                 employee_id=employee_id,
-                embedding_data=binary_embedding,
+                embedding_vector=binary_embedding,
                 embedding_type=embedding_type,
                 quality_score=float(quality_score),
-                source_image_path=source_image_path,
+                image_path=source_image_path,
                 is_active=True
             )
             session.add(new_embedding)
@@ -115,7 +115,7 @@ class DatabaseManager:
             results = []
             for embedding_record in query.all():
                 # ✅ Deserialize bytes to numpy array
-                embedding_data = np.load(BytesIO(embedding_record.embedding_data))
+                embedding_data = np.load(BytesIO(embedding_record.embedding_vector))
                 results.append((embedding_record.employee_id, embedding_data))
             return results
         except Exception as e:
@@ -138,7 +138,7 @@ class DatabaseManager:
             ).all()
 
             for emb_record in enroll_embeddings:
-                embedding_data = pickle.loads(emb_record.embedding_data)
+                embedding_data = pickle.loads(emb_record.embedding_vector)
                 embeddings.append(embedding_data)
                 labels.append(emb_record.employee_id)
 
@@ -152,7 +152,7 @@ class DatabaseManager:
                 if emp_id not in employee_update_count:
                     employee_update_count[emp_id] = 0
                 if employee_update_count[emp_id] < 3:
-                    embedding_data = pickle.loads(emb_record.embedding_data)
+                    embedding_data = pickle.loads(emb_record.embedding_vector)
                     embeddings.append(embedding_data)
                     labels.append(emb_record.employee_id)
                     employee_update_count[emp_id] += 1

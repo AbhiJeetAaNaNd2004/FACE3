@@ -1,195 +1,165 @@
+#!/usr/bin/env python3
 """
-Database initialization script
-Creates sample users and data for testing the face recognition attendance system
+Database Initialization Script for Face Recognition Attendance System
+Creates tables and inserts sample data
 """
 
-import os
 import sys
-from datetime import date, datetime
+import os
+from pathlib import Path
 
-# Add the backend directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add backend to path
+backend_path = Path(__file__).parent
+sys.path.insert(0, str(backend_path))
 
-from sqlalchemy.orm import Session
-from db.db_config import SessionLocal, create_tables
-from db.db_models import UserAccount, Employee, AttendanceLog
+from db.db_config import create_tables, get_db, test_connection
+from db.db_models import Employee, UserAccount, CameraConfig
 from app.security import get_password_hash
+from datetime import date
+import logging
 
-def create_sample_data():
-    """Create sample users and employees for testing"""
-    db = SessionLocal()
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def initialize_database():
+    """Initialize database with tables and sample data"""
     
+    print("🗄️  Face Recognition Attendance System - Database Initialization")
+    print("=" * 70)
+    
+    # Test database connection first
+    print("🔍 Testing database connection...")
+    if not test_connection():
+        print("❌ Database connection failed. Please check your configuration.")
+        return False
+    
+    print("✅ Database connection successful")
+    
+    # Create tables
+    print("🏗️  Creating database tables...")
     try:
-        # Create sample employees
-        employees = [
-            {
-                "employee_id": "EMP001",
-                "name": "John Doe",
-                "department": "Engineering",
-                "role": "Software Engineer",
-                "date_joined": date(2023, 1, 15),
-                "email": "john.doe@company.com",
-                "phone": "+1234567890"
-            },
-            {
-                "employee_id": "EMP002",
-                "name": "Jane Smith",
-                "department": "HR",
-                "role": "HR Manager",
-                "date_joined": date(2023, 2, 1),
-                "email": "jane.smith@company.com",
-                "phone": "+1234567891"
-            },
-            {
-                "employee_id": "EMP003",
-                "name": "Bob Johnson",
-                "department": "Engineering",
-                "role": "Senior Developer",
-                "date_joined": date(2023, 3, 10),
-                "email": "bob.johnson@company.com",
-                "phone": "+1234567892"
-            }
-        ]
+        create_tables()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        print(f"❌ Error creating tables: {e}")
+        return False
+    
+    # Insert sample data
+    print("📝 Inserting sample data...")
+    
+    db = next(get_db())
+    try:
+        # Check if admin user already exists
+        existing_admin = db.query(UserAccount).filter(UserAccount.username == "admin").first()
+        if not existing_admin:
+            # Create super admin user
+            admin_user = UserAccount(
+                username="admin",
+                hashed_password=get_password_hash("admin123"),
+                role="super_admin",
+                is_active=True
+            )
+            db.add(admin_user)
+            print("✅ Created super admin user (username: admin, password: admin123)")
+        else:
+            print("ℹ️  Super admin user already exists")
         
-        for emp_data in employees:
-            existing_emp = db.query(Employee).filter(
-                Employee.employee_id == emp_data["employee_id"]
-            ).first()
-            
-            if not existing_emp:
-                employee = Employee(**emp_data)
-                db.add(employee)
-                print(f"Created employee: {emp_data['name']} ({emp_data['employee_id']})")
-        
-        # Create sample user accounts
-        users = [
-            {
-                "username": "admin",
-                "password": "admin123",
-                "role": "super_admin",
-                "employee_id": None
-            },
-            {
-                "username": "hr_manager",
-                "password": "hr123",
-                "role": "admin",
-                "employee_id": "EMP002"
-            },
-            {
-                "username": "john.doe",
-                "password": "john123",
-                "role": "employee",
-                "employee_id": "EMP001"
-            },
-            {
-                "username": "bob.johnson",
-                "password": "bob123",
-                "role": "employee",
-                "employee_id": "EMP003"
-            }
-        ]
-        
-        for user_data in users:
-            existing_user = db.query(UserAccount).filter(
-                UserAccount.username == user_data["username"]
-            ).first()
-            
-            if not existing_user:
-                hashed_password = get_password_hash(user_data["password"])
-                user = UserAccount(
-                    username=user_data["username"],
-                    hashed_password=hashed_password,
-                    role=user_data["role"],
-                    employee_id=user_data["employee_id"]
+        # Check if sample employees exist
+        existing_employee = db.query(Employee).filter(Employee.employee_id == "EMP001").first()
+        if not existing_employee:
+            # Create sample employees
+            employees = [
+                Employee(
+                    employee_id="EMP001",
+                    name="John Doe",
+                    department="Engineering",
+                    role="Software Developer",
+                    date_joined=date(2023, 1, 15),
+                    email="john.doe@company.com",
+                    phone="+1234567890",
+                    is_active=True
+                ),
+                Employee(
+                    employee_id="EMP002",
+                    name="Jane Smith",
+                    department="HR",
+                    role="HR Manager",
+                    date_joined=date(2023, 2, 1),
+                    email="jane.smith@company.com",
+                    phone="+1234567891",
+                    is_active=True
+                ),
+                Employee(
+                    employee_id="EMP003",
+                    name="Mike Johnson",
+                    department="Engineering",
+                    role="Senior Developer",
+                    date_joined=date(2023, 3, 10),
+                    email="mike.johnson@company.com",
+                    phone="+1234567892",
+                    is_active=True
                 )
-                db.add(user)
-                print(f"Created user: {user_data['username']} (role: {user_data['role']})")
+            ]
+            
+            for employee in employees:
+                db.add(employee)
+            
+            print("✅ Created sample employees")
+        else:
+            print("ℹ️  Sample employees already exist")
         
-        # Create sample attendance logs
-        attendance_logs = [
-            {
-                "employee_id": "EMP001",
-                "status": "present",
-                "confidence_score": 0.95,
-                "notes": "Automatic detection",
-                "timestamp": datetime(2024, 1, 15, 9, 0, 0)
-            },
-            {
-                "employee_id": "EMP002",
-                "status": "present",
-                "confidence_score": 0.92,
-                "notes": "Automatic detection",
-                "timestamp": datetime(2024, 1, 15, 9, 15, 0)
-            },
-            {
-                "employee_id": "EMP001",
-                "status": "absent",
-                "confidence_score": None,
-                "notes": "Manual entry",
-                "timestamp": datetime(2024, 1, 16, 9, 0, 0)
-            }
-        ]
+        # Check if sample camera exists
+        existing_camera = db.query(CameraConfig).filter(CameraConfig.camera_id == 0).first()
+        if not existing_camera:
+            # Create sample camera configuration
+            camera = CameraConfig(
+                camera_id=0,
+                camera_name="Main Entrance Camera",
+                camera_type="entry",
+                resolution_width=640,
+                resolution_height=480,
+                fps=30,
+                status="discovered",
+                is_active=True,
+                location_description="Main entrance door"
+            )
+            db.add(camera)
+            print("✅ Created sample camera configuration")
+        else:
+            print("ℹ️  Sample camera already exists")
         
-        for log_data in attendance_logs:
-            attendance_log = AttendanceLog(**log_data)
-            db.add(attendance_log)
-        
-        print("Created sample attendance logs")
-        
+        # Commit all changes
         db.commit()
-        print("\n✅ Sample data created successfully!")
+        print("✅ Sample data inserted successfully")
         
-        # Print login credentials
-        print("\n🔑 Sample Login Credentials:")
-        print("=" * 50)
-        print("Super Admin:")
-        print("  Username: admin")
-        print("  Password: admin123")
-        print("  Role: super_admin")
-        print("\nAdmin (HR Manager):")
-        print("  Username: hr_manager")
-        print("  Password: hr123")
-        print("  Role: admin")
-        print("\nEmployee (John Doe):")
-        print("  Username: john.doe")
-        print("  Password: john123")
-        print("  Role: employee")
-        print("\nEmployee (Bob Johnson):")
-        print("  Username: bob.johnson")
-        print("  Password: bob123")
-        print("  Role: employee")
-        print("=" * 50)
+        return True
         
     except Exception as e:
-        print(f"❌ Error creating sample data: {e}")
         db.rollback()
-        raise
+        print(f"❌ Error inserting sample data: {e}")
+        return False
     finally:
         db.close()
 
 def main():
-    """Main function to initialize database and create sample data"""
-    print("🚀 Initializing Face Recognition Attendance System Database")
-    print("=" * 60)
+    """Main function"""
+    print("Starting database initialization...")
     
-    try:
-        # Create tables
-        print("Creating database tables...")
-        create_tables()
-        print("✅ Database tables created successfully!")
-        
-        # Create sample data
-        print("\nCreating sample data...")
-        create_sample_data()
-        
-        print("\n🎯 Database initialization completed successfully!")
-        print("\nYou can now start the API server with:")
-        print("  uvicorn app.main:app --reload")
-        print("\nAPI Documentation will be available at:")
-        print("  http://localhost:8000/docs")
-        
-    except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+    success = initialize_database()
+    
+    if success:
+        print("\n🎉 Database initialization completed successfully!")
+        print("=" * 70)
+        print("📋 Summary:")
+        print("   • Database tables created")
+        print("   • Super admin user: admin / admin123")
+        print("   • Sample employees added")
+        print("   • Sample camera configuration added")
+        print("=" * 70)
+        print("🚀 You can now start the server!")
+    else:
+        print("\n❌ Database initialization failed!")
         sys.exit(1)
 
 if __name__ == "__main__":

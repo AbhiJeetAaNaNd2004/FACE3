@@ -31,6 +31,7 @@ class FaceEmbedding(Base):
     employee_id = Column(String, ForeignKey('employees.employee_id'), nullable=False)
     image_path = Column(String, nullable=False)
     embedding_vector = Column(LargeBinary, nullable=False)  # Stored as binary data
+    embedding_type = Column(String, default='enroll', nullable=False)  # 'enroll', 'update', 'verify'
     quality_score = Column(Float, nullable=True)
     created_at = Column(DateTime, default=func.now())
     is_active = Column(Boolean, default=True)

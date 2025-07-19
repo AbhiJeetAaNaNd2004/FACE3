@@ -27,24 +27,17 @@ def check_requirements():
         return False
 
 def check_database_connection():
-    """Check if database connection is working"""
+    """Test database connection"""
     try:
-        # Add backend to path
-        backend_path = Path(__file__).parent / "backend"
-        sys.path.insert(0, str(backend_path))
-        
-        from app.config import settings
-        from db.db_config import engine
-        
-        # Test connection
-        with engine.connect() as conn:
-            conn.execute("SELECT 1")
-        
-        print("✅ Database connection successful")
-        return True
+        from backend.db.db_config import test_connection
+        if test_connection():
+            print("✅ Database connection successful")
+            return True
+        else:
+            print("❌ Database connection failed")
+            return False
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
-        print("Please check your database configuration in backend/.env")
+        print(f"❌ Database connection error: {e}")
         return False
 
 def initialize_database():

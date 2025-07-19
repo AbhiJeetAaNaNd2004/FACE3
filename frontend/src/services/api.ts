@@ -70,6 +70,11 @@ class ApiService {
     return response.data;
   }
 
+  async logout(): Promise<MessageResponse> {
+    const response = await this.api.post<MessageResponse>('/auth/logout');
+    return response.data;
+  }
+
   async getUsers(): Promise<User[]> {
     const response = await this.api.get<User[]>('/auth/users');
     return response.data;
