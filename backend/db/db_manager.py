@@ -7,7 +7,6 @@ import pickle
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
-import psycopg2
 from io import BytesIO
 import threading
 

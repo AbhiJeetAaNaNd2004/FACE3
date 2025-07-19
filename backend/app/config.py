@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     
     # CORS Configuration
     FRONTEND_URL: str = "http://localhost:3000"
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
     
     # Face Recognition Configuration
     FACE_RECOGNITION_TOLERANCE: float = 0.6
@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     LOG_FILE: str = "logs/app.log"
     LOG_ROTATION: str = "1 day"
     LOG_RETENTION: str = "30 days"
+    
+    # Face Tracking System Configuration
+    FTS_AUTO_START: bool = True  # Auto-start FTS on server startup
+    FTS_STARTUP_DELAY: int = 2   # Delay in seconds before starting FTS
     
     @property
     def DATABASE_URL(self) -> str:

@@ -1,421 +1,383 @@
 # Face Recognition Attendance System
 
-A fully functional backend for a face recognition-based attendance system built with FastAPI and PostgreSQL. This system provides role-based access control, JWT authentication, and comprehensive attendance tracking capabilities.
+A complete, production-ready Face Recognition Attendance System built with FastAPI backend and React frontend. This system provides real-time face recognition for employee attendance tracking with a modern, responsive web interface.
 
-## Features
+## 🌟 Features
 
-- **JWT-based Authentication** with OAuth2PasswordBearer
-- **Role-Based Access Control (RBAC)** with three roles:
-  - **Employee**: View own attendance, view currently present employees
-  - **Admin**: All Employee permissions + enroll employees, manage face embeddings, delete records, view live feed
-  - **Super Admin**: All Admin permissions + create/delete user accounts, assign roles
-- **Face Recognition Integration** (mock implementation included, ready for real face recognition libraries)
-- **Attendance Tracking** with comprehensive logging
-- **Live Camera Feed** (mock MJPEG stream)
-- **RESTful API** with comprehensive documentation
+### Backend Features
+- **FastAPI-based RESTful API** with automatic documentation
+- **Real-time Face Recognition** using OpenCV and face_recognition library
+- **JWT Authentication** with role-based access control
+- **Database Integration** with SQLAlchemy ORM
+- **WebSocket Support** for real-time updates
+- **Camera Management** with RTSP/HTTP stream support
+- **Employee Enrollment** with face image processing
+- **Attendance Tracking** with confidence scoring
+- **User Management** with multiple role levels
+- **Unified Server Architecture** with background face tracking
 
-## Technology Stack
+### Frontend Features
+- **Modern React UI** with TypeScript
+- **Tailwind CSS** styling with responsive design
+- **Role-based Dashboard** (Super Admin, Admin, Employee)
+- **Real-time Camera Feeds** with live face detection
+- **Employee Management** with face enrollment
+- **Attendance Monitoring** with detailed analytics
+- **User Management** for administrators
+- **Live Activity Feed** with WebSocket integration
+- **File Upload** with drag-and-drop support
+- **Data Tables** with sorting, filtering, and search
 
-- **Backend**: FastAPI
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy
-- **Authentication**: JWT with passlib[bcrypt]
-- **Environment**: Compatible with Windows (development) and Linux (production)
-- **No Docker Required**: Runs as a standalone application
+## 🏗️ System Architecture
 
-## Database Schema
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React Frontend │    │  FastAPI Backend │    │   Face Tracking │
+│                 │    │                 │    │     System      │
+│ • Authentication│◄──►│ • REST API      │◄──►│ • OpenCV        │
+│ • Dashboards    │    │ • WebSocket     │    │ • Face Detection│
+│ • Real-time UI  │    │ • Database      │    │ • Recognition   │
+│ • File Upload   │    │ • JWT Auth      │    │ • Camera Stream │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                        ┌─────────────────┐
+                        │   Database      │
+                        │                 │
+                        │ • Users         │
+                        │ • Employees     │
+                        │ • Attendance    │
+                        │ • Cameras       │
+                        └─────────────────┘
+```
 
-### Core Models
-
-1. **Employee**
-   - `employee_id` (Primary Key)
-   - `name`, `department`, `role`, `date_joined`
-   - `email`, `phone`, `is_active`
-
-2. **FaceEmbedding**
-   - `id` (Primary Key)
-   - `employee_id` (Foreign Key)
-   - `image_path`, `embedding_vector`
-   - `quality_score`, `is_active`
-
-3. **AttendanceLog**
-   - `id` (Primary Key)
-   - `employee_id` (Foreign Key)
-   - `timestamp`, `status` (present/absent)
-   - `confidence_score`, `notes`
-
-4. **UserAccount**
-   - `id` (Primary Key)
-   - `username`, `hashed_password`, `role`
-   - `employee_id` (Optional Foreign Key)
-   - `is_active`, `last_login`
-
-## Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
+- Python 3.8+ 
+- Node.js 16+
+- npm or yarn
+- Git
 
-1. **Python 3.8+**
-2. **PostgreSQL 12+**
-3. **Git**
+### Installation
 
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd face-recognition-attendance
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Database Setup
-
-#### PostgreSQL Installation
-
-**Windows:**
-```bash
-# Download and install PostgreSQL from https://www.postgresql.org/download/windows/
-# Or use chocolatey:
-choco install postgresql
-
-# Create database
-psql -U postgres
-CREATE DATABASE face_attendance;
-\q
-```
-
-**Linux:**
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-
-# CentOS/RHEL
-sudo yum install postgresql postgresql-server postgresql-contrib
-
-# Create database
-sudo -u postgres psql
-CREATE DATABASE face_attendance;
-\q
-```
-
-### 4. Environment Configuration
-
-Create a `.env` file in the `backend` directory:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Update the `.env` file with your database credentials:
-
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=face_attendance
-DB_USER=postgres
-DB_PASSWORD=your_password_here
-
-# Security Configuration
-SECRET_KEY=your-super-secret-key-change-this-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-
-# Application Configuration
-ENVIRONMENT=development
-DEBUG=true
-LOG_LEVEL=INFO
-```
-
-### 5. Initialize Database
-
-```bash
-cd backend
-python init_db.py
-```
-
-This will create all necessary tables and sample data including test users.
-
-### 6. Start the Application
-
-```bash
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The API will be available at:
-- **API**: http://localhost:8000
-- **Documentation**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-## API Endpoints
-
-### Authentication
-
-- `POST /auth/login` - Login with OAuth2PasswordRequestForm
-- `POST /auth/login/json` - Login with JSON data
-- `GET /auth/me` - Get current user info
-- `POST /auth/users/create` - Create user account (Super Admin only)
-- `PATCH /auth/users/{user_id}/role` - Assign role (Super Admin only)
-- `GET /auth/users` - List all users (Super Admin only)
-- `DELETE /auth/users/{user_id}` - Delete user (Super Admin only)
-
-### Employee Management
-
-- `POST /employees/enroll` - Enroll employee with face data (Admin+)
-- `GET /employees/` - List all employees (Any authenticated user)
-- `GET /employees/{employee_id}` - Get employee details
-- `PUT /employees/{employee_id}` - Update employee (Admin+)
-- `DELETE /employees/{employee_id}` - Delete employee (Admin+)
-- `GET /employees/present/current` - Get currently present employees
-- `POST /employees/{employee_id}/face-image` - Upload face image (Admin+)
-
-### Attendance Management
-
-- `GET /attendance/me` - Get own attendance (Employee+)
-- `GET /attendance/all` - Get all attendance records (Admin+)
-- `GET /attendance/{employee_id}` - Get employee attendance
-- `POST /attendance/mark` - Mark attendance (Admin+)
-- `GET /attendance/summary/daily` - Daily attendance summary (Admin+)
-- `DELETE /attendance/{log_id}` - Delete attendance log (Admin+)
-- `GET /attendance/employee/{employee_id}/latest` - Get latest attendance
-
-### Face Embeddings
-
-- `GET /embeddings/` - List face embeddings (Admin+)
-- `GET /embeddings/{embedding_id}` - Get specific embedding (Admin+)
-- `DELETE /embeddings/{embedding_id}` - Delete embedding (Admin+)
-- `GET /embeddings/employee/{employee_id}` - Get employee embeddings (Admin+)
-- `DELETE /embeddings/employee/{employee_id}/all` - Delete all employee embeddings (Admin+)
-- `GET /embeddings/stats/summary` - Get embeddings statistics (Admin+)
-
-### Live Streaming
-
-- `GET /stream/live-feed` - Get live camera feed (Admin+)
-- `GET /stream/camera-status` - Get camera status (Admin+)
-- `GET /stream/health` - Streaming health check (Admin+)
-
-## Sample Login Credentials
-
-The initialization script creates the following test users:
-
-| Username | Password | Role | Employee ID |
-|----------|----------|------|-------------|
-| admin | admin123 | super_admin | None |
-| hr_manager | hr123 | admin | EMP002 |
-| john.doe | john123 | employee | EMP001 |
-| bob.johnson | bob123 | employee | EMP003 |
-
-## Role-Based Access Control
-
-### Employee Role
-- View own attendance records
-- View list of currently present employees
-- View employee directory
-
-### Admin Role
-- All Employee permissions
-- Enroll new employees with face data
-- Add/delete face embeddings
-- Mark attendance for employees
-- Delete attendance records
-- View live camera feed
-- Access attendance summaries
-
-### Super Admin Role
-- All Admin permissions
-- Create/delete user accounts
-- Assign roles to users
-- Full system administration
-
-## Usage Examples
-
-### 1. Authentication
-
-```bash
-# Login to get JWT token
-curl -X POST "http://localhost:8000/auth/login" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123"
-
-# Response:
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
-}
-```
-
-### 2. Employee Enrollment
-
-```bash
-# Enroll employee with face data (Admin+ only)
-curl -X POST "http://localhost:8000/employees/enroll" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "employee": {
-      "employee_id": "EMP004",
-      "name": "Alice Johnson",
-      "department": "Marketing",
-      "role": "Marketing Manager",
-      "date_joined": "2024-01-01",
-      "email": "alice@company.com"
-    },
-    "image_data": "base64_encoded_image_data_here"
-  }'
-```
-
-### 3. View Own Attendance
-
-```bash
-# Get own attendance records
-curl -X GET "http://localhost:8000/attendance/me" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### 4. Mark Attendance
-
-```bash
-# Mark attendance (Admin+ only)
-curl -X POST "http://localhost:8000/attendance/mark" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "employee_id": "EMP001",
-    "status": "present",
-    "confidence_score": 0.95,
-    "notes": "Automatic detection"
-  }'
-```
-
-## Deployment
-
-### Production Deployment
-
-1. **Set Environment Variables**:
+1. **Clone the repository**
    ```bash
-   export ENVIRONMENT=production
-   export DEBUG=false
-   export SECRET_KEY=your-production-secret-key
+   git clone <repository-url>
+   cd face-recognition-attendance-system
    ```
 
-2. **Use Production Database**:
-   Update database credentials in `.env` file
+2. **Set up the development environment**
+   ```bash
+   chmod +x setup_dev.sh
+   ./setup_dev.sh
+   ```
 
-3. **Run with Gunicorn**:
+3. **Start the unified server (Backend + Face Tracking)**
+   ```bash
+   python start_unified_server.py
+   ```
+
+4. **Start the frontend development server**
+   ```bash
+   npm run frontend
+   ```
+
+5. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Default Login Credentials
+- **Super Admin**: `admin` / `admin123`
+- **Admin**: `manager` / `manager123`  
+- **Employee**: `employee` / `employee123`
+
+## 📁 Project Structure
+
+```
+face-recognition-attendance-system/
+├── backend/                     # FastAPI backend
+│   ├── app/
+│   │   ├── api/                 # API routes
+│   │   ├── core/                # Core configurations
+│   │   ├── db/                  # Database models and setup
+│   │   ├── services/            # Business logic
+│   │   └── main.py              # FastAPI application
+│   ├── face_recognition_system/ # Face tracking system
+│   │   ├── camera_manager.py    # Camera management
+│   │   ├── face_detector.py     # Face detection logic
+│   │   ├── face_tracker.py      # Main tracking system
+│   │   └── models/              # ML models
+│   └── requirements.txt         # Python dependencies
+├── frontend/                    # React frontend
+│   ├── public/                  # Static assets
+│   ├── src/
+│   │   ├── components/          # Reusable UI components
+│   │   │   ├── ui/              # Base UI components
+│   │   │   ├── layout/          # Layout components
+│   │   │   └── camera/          # Camera-specific components
+│   │   ├── pages/               # Page components
+│   │   │   ├── login/           # Login page
+│   │   │   ├── super-admin/     # Super admin pages
+│   │   │   ├── admin/           # Admin pages
+│   │   │   └── employee/        # Employee pages
+│   │   ├── store/               # Zustand state management
+│   │   ├── services/            # API service layer
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── types/               # TypeScript definitions
+│   │   └── utils/               # Utility functions
+│   ├── package.json             # Node.js dependencies
+│   └── tailwind.config.js       # Tailwind CSS configuration
+├── start_unified_server.py      # Unified server startup script
+├── setup_dev.sh                 # Development setup script
+├── package.json                 # Root package.json with scripts
+└── README.md                    # This file
+```
+
+## 🎯 User Roles & Permissions
+
+### Super Admin
+- **Full system access**
+- User management (create, edit, delete users)
+- Employee management with face enrollment
+- Camera management and configuration
+- Live monitoring with multiple camera feeds
+- System control (start/stop face tracking)
+- Attendance analytics and reporting
+
+### Admin
+- **Administrative access**
+- Employee management with face enrollment
+- Camera management and configuration
+- Live monitoring with camera feeds
+- Attendance tracking and analytics
+- Cannot manage users or system settings
+
+### Employee
+- **Limited access**
+- Personal dashboard with attendance history
+- View current attendance status
+- See colleagues currently present
+- Personal information management
+
+## 📊 Key Features Deep Dive
+
+### Face Recognition System
+- **Real-time Processing**: Processes camera feeds in real-time
+- **High Accuracy**: Uses state-of-the-art face recognition algorithms
+- **Confidence Scoring**: Provides confidence levels for each recognition
+- **Multiple Cameras**: Supports multiple camera streams simultaneously
+- **Auto-enrollment**: Easy face enrollment process with image upload
+
+### Dashboard Analytics
+- **Live Statistics**: Real-time employee count and attendance rates
+- **Historical Data**: Comprehensive attendance history and analytics
+- **Visual Insights**: Charts and graphs for attendance patterns
+- **Export Capabilities**: Export attendance data for reporting
+
+### Real-time Features
+- **WebSocket Integration**: Live updates without page refresh
+- **Activity Feed**: Real-time stream of recognition events
+- **Camera Monitoring**: Live camera feeds with face detection overlays
+- **Status Indicators**: Real-time system and camera status
+
+### Security
+- **JWT Authentication**: Secure token-based authentication
+- **Role-based Access**: Granular permissions based on user roles
+- **Password Hashing**: Secure password storage with bcrypt
+- **API Security**: Protected endpoints with proper authorization
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create `.env` files in both backend and frontend directories:
+
+**Backend (.env)**
+```env
+DATABASE_URL=sqlite:///./attendance.db
+SECRET_KEY=your-secret-key-here
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+FACE_TRACKING_AUTO_START=true
+FRONTEND_URL=http://localhost:3000
+```
+
+**Frontend (.env)**
+```env
+REACT_APP_API_URL=http://localhost:8000
+```
+
+### Camera Configuration
+- Supports RTSP, HTTP, and USB cameras
+- Configure camera streams in the Camera Management section
+- Auto-discovery feature for network cameras
+- Customizable detection zones and sensitivity
+
+### Database Configuration
+- Default: SQLite for development
+- Production: PostgreSQL/MySQL support available
+- Automatic database initialization with sample data
+- Migration support for schema updates
+
+## 🚀 Deployment
+
+### Production Build
+
+1. **Build Frontend**
+   ```bash
+   npm run build
+   ```
+
+2. **Backend Production Setup**
    ```bash
    pip install gunicorn
-   gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+   gunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.app.main:app
    ```
 
-4. **Nginx Configuration** (optional):
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-       
-       location / {
-           proxy_pass http://127.0.0.1:8000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-       }
-   }
-   ```
+3. **Environment Setup**
+   - Configure production database
+   - Set secure SECRET_KEY
+   - Configure CORS settings
+   - Set up SSL certificates
 
-### Windows Service (Production)
+### Docker Deployment (Optional)
 
-Create a Windows service using `nssm` or similar tools:
-
-```bash
-# Install nssm
-nssm install FaceAttendanceAPI
-
-# Configure service
-nssm set FaceAttendanceAPI Application "C:\path\to\python.exe"
-nssm set FaceAttendanceAPI AppParameters "-m uvicorn app.main:app --host 0.0.0.0 --port 8000"
-nssm set FaceAttendanceAPI AppDirectory "C:\path\to\your\backend"
-nssm start FaceAttendanceAPI
+```dockerfile
+# Example Dockerfile for backend
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "start_unified_server.py"]
 ```
 
-## Development
+## 🛠️ Development
 
-### Adding Face Recognition
-
-To integrate real face recognition capabilities:
-
-1. **Install face recognition libraries**:
-   ```bash
-   pip install opencv-python face-recognition numpy Pillow
-   ```
-
-2. **Update the enrollment process** in `backend/app/routers/employees.py`
-3. **Implement face matching** in attendance marking logic
-4. **Add real-time face detection** in the streaming module
-
-### Database Migrations
-
-For database schema changes, use Alembic:
-
+### Backend Development
 ```bash
-# Initialize Alembic (first time only)
-alembic init alembic
+# Install dependencies
+pip install -r backend/requirements.txt
 
-# Create migration
-alembic revision --autogenerate -m "Description of changes"
+# Run development server with auto-reload
+python start_unified_server.py --reload
 
-# Apply migration
-alembic upgrade head
+# Run tests
+pytest backend/tests/
+
+# Format code
+black backend/
 ```
 
-## Troubleshooting
+### Frontend Development
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+```
+
+### Adding New Features
+
+1. **Backend**: Add routes in `backend/app/api/`
+2. **Frontend**: Add components in `frontend/src/components/`
+3. **Database**: Add models in `backend/app/db/models/`
+4. **Types**: Update TypeScript types in `frontend/src/types/`
+
+## 📚 API Documentation
+
+The API documentation is automatically generated and available at:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### Key Endpoints
+
+- `POST /auth/login` - User authentication
+- `GET /auth/me` - Get current user info
+- `GET /employees/` - List all employees
+- `POST /employees/enroll` - Enroll new employee
+- `GET /attendance/all` - Get all attendance records
+- `GET /cameras/` - List all cameras
+- `POST /cameras/` - Add new camera
+- `GET /system/status` - Get system status
+
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Error**:
-   - Check PostgreSQL is running
-   - Verify database credentials in `.env`
-   - Ensure database exists
+1. **Camera not detected**
+   - Check camera permissions
+   - Verify stream URL format
+   - Test camera connectivity
 
-2. **JWT Token Issues**:
-   - Check `SECRET_KEY` in `.env`
-   - Verify token expiration time
-   - Ensure proper Authorization header format
+2. **Face recognition not working**
+   - Ensure good lighting conditions
+   - Check if face images are properly enrolled
+   - Verify camera positioning
 
-3. **Permission Denied**:
-   - Check user role assignments
-   - Verify JWT token is valid
-   - Ensure user is active
+3. **Database connection errors**
+   - Check database URL in environment variables
+   - Ensure database server is running
+   - Verify database permissions
 
-4. **Import Errors**:
-   - Check Python path
-   - Verify all dependencies are installed
-   - Ensure you're in the correct directory
+4. **Frontend build errors**
+   - Clear npm cache: `npm cache clean --force`
+   - Delete node_modules and reinstall
+   - Check Node.js version compatibility
 
-### Logs
+### Performance Optimization
 
-Application logs are available in:
-- Console output (development)
-- Log files (production, if configured)
+- **Database**: Use connection pooling for production
+- **Camera Processing**: Adjust frame rate and resolution
+- **Frontend**: Enable production build optimizations
+- **Caching**: Implement Redis for session management
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+### Development Guidelines
+- Follow TypeScript/Python type hints
+- Write tests for new features
+- Update documentation for API changes
+- Follow existing code style and conventions
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
 
-## Support
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-For support and questions:
-- Check the API documentation at `/docs`
-- Review the troubleshooting section
-- Create an issue in the repository
+## 🙏 Acknowledgments
+
+- **OpenCV** for computer vision capabilities
+- **FastAPI** for the high-performance backend framework
+- **React** for the modern frontend framework
+- **Tailwind CSS** for the utility-first CSS framework
+- **face_recognition** library for facial recognition algorithms
+
+## 📞 Support
+
+For questions, issues, or contributions:
+- Create an issue on GitHub
+- Check the documentation at `/docs`
+- Review the troubleshooting section above
+
+---
+
+**Built with ❤️ for modern attendance management**
