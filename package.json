@@ -11,9 +11,11 @@
     "install:backend": "pip3 install -r requirements.txt",
     "install:all": "npm run install:backend && npm run install:frontend",
     "init:db": "python3 start_unified_server.py --init-db",
+    "setup:postgresql": "python3 setup_postgresql.py",
     "start": "python3 start_unified_server.py",
     "start:force": "python3 start_unified_server.py --force",
     "cleanup:port": "python3 cleanup_port.py 8000",
+    "check:env": "python3 check_env.py",
     "test:frontend": "cd frontend && npm test",
     "test:backend": "cd backend && pytest"
   },

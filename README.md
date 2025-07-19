@@ -131,35 +131,55 @@ cp .env.example .env
 nano .env
 ```
 
-**Environment Configuration (.env):**
+**Environment Configuration (.env files):**
+
+The system uses multiple .env files for configuration:
+- `.env` - Root configuration (shared settings)
+- `backend/.env` - Backend-specific settings  
+- `frontend/.env` - Frontend-specific settings
+
+**Setup .env files:**
+```bash
+# Copy template files and customize
+cp .env.example .env
+cp backend/.env.example backend/.env  
+cp frontend/.env.example frontend/.env
+
+# Edit with your database credentials
+nano .env
+nano backend/.env
+```
+
+**Key configuration options:**
 ```env
-# Database Configuration
+# Database Configuration (PostgreSQL)
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=frs_db
-DB_USER=frs_user
-DB_PASSWORD=frs_password
+DB_NAME=face_attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_password
 
-# Security
-SECRET_KEY=your-very-secure-secret-key-change-in-production
-JWT_ALGORITHM=HS256
-JWT_EXPIRATION_HOURS=24
+# Security & JWT
+SECRET_KEY=your-secret-key-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # Application Settings
-DEBUG=true
 ENVIRONMENT=development
+DEBUG=true
 LOG_LEVEL=INFO
 
 # Face Recognition Settings
-FACE_CONFIDENCE_THRESHOLD=0.6
-EMBEDDING_MODEL=facenet
-FACE_DETECTION_MODEL=mtcnn
+FACE_RECOGNITION_TOLERANCE=0.6
+FACE_DETECTION_MODEL=hog
+FACE_ENCODING_MODEL=large
 
 # Camera Settings
 DEFAULT_CAMERA_ID=0
-CAMERA_RESOLUTION_WIDTH=640
-CAMERA_RESOLUTION_HEIGHT=480
-CAMERA_FPS=30
+MAX_CONCURRENT_STREAMS=5
+
+# Frontend API URL
+REACT_APP_API_URL=http://localhost:8000
 ```
 
 ### 4. Install Dependencies
