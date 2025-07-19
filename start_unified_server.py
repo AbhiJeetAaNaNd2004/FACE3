@@ -119,6 +119,20 @@ def initialize_database():
 def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=True, force_kill=False):
     """Start the FastAPI server with integrated FTS"""
     try:
+        print("🔧 Optimizing system for Face Tracking System...")
+        
+        # Set environment variables for memory optimization BEFORE any imports
+        os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+        os.environ['OMP_NUM_THREADS'] = '1'
+        os.environ['MKL_NUM_THREADS'] = '1'
+        os.environ['NUMEXPR_NUM_THREADS'] = '1'
+        os.environ['PYTORCH_JIT'] = '0'
+        
+        # Force single worker mode if FTS is enabled to prevent memory conflicts
+        if enable_fts and workers > 1:
+            print("⚠️ Forcing single worker mode when FTS is enabled to prevent memory conflicts")
+            workers = 1
+        
         # Check if port is available or force kill if requested
         if force_kill or not check_port_available(host, port):
             if force_kill:
@@ -152,18 +166,21 @@ def start_server(host="0.0.0.0", port=8000, reload=False, workers=1, enable_fts=
             os.environ["FTS_AUTO_START"] = "false"
             print("⚠️ Face Tracking System auto-start is disabled")
         
-        # Build uvicorn command
+        # Build uvicorn command with conservative settings
         cmd = [
             sys.executable, "-m", "uvicorn",
             "app.main:app",
             "--host", host,
-            "--port", str(port)
+            "--port", str(port),
+            "--access-log",  # Enable access logging
+            "--loop", "asyncio",  # Use asyncio loop for better compatibility
         ]
         
         if reload:
             cmd.append("--reload")
         
-        if workers > 1 and not reload:
+        # Only use multiple workers if reload is disabled and FTS is disabled
+        if workers > 1 and not reload and not enable_fts:
             cmd.extend(["--workers", str(workers)])
         
         print("🎯 Face Recognition Attendance System")
