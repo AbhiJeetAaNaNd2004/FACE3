@@ -2,6 +2,27 @@
 
 A comprehensive face recognition-based attendance tracking system with real-time detection, web interface, and role-based access control.
 
+## 📋 Table of Contents
+
+1. [Features](#-features)
+2. [Quick Start](#-quick-start)
+3. [System Requirements](#-system-requirements)
+4. [Installation](#-installation)
+5. [Configuration](#-configuration)
+6. [Database Setup](#-database-setup)
+7. [Starting the System](#-starting-the-system)
+8. [Default Credentials](#-default-credentials)
+9. [Usage Guide](#-usage-guide)
+10. [Camera Setup](#-camera-setup)
+11. [Troubleshooting](#-troubleshooting)
+12. [Port Conflict Solutions](#-port-conflict-solutions)
+13. [Environment Configuration](#-environment-configuration)
+14. [Performance Optimization](#-performance-optimization)
+15. [Production Deployment](#-production-deployment)
+16. [API Documentation](#-api-documentation)
+17. [Security Considerations](#-security-considerations)
+18. [Contributing](#-contributing)
+
 ## 🌟 Features
 
 ### ✅ Core Functionality
@@ -19,58 +40,83 @@ A comprehensive face recognition-based attendance tracking system with real-time
 - **ONVIF Camera Discovery** - Automatic network camera detection
 - **Tripwire Detection** - Configurable entry/exit zones
 - **WebSocket Support** - Real-time activity updates
-- **Database Management** - SQLite with SQLAlchemy ORM
+- **Database Management** - SQLite/PostgreSQL with SQLAlchemy ORM
 - **JWT Authentication** - Secure token-based authentication
 - **Docker Support** - Containerized deployment option
 
+### 🏗️ Technology Stack
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│    Frontend     │◄──►│     Backend     │◄──►│   AI/Computer   │
+│                 │    │                 │    │     Vision      │
+│ • React 19      │    │ • FastAPI       │    │ • InsightFace   │
+│ • TypeScript    │    │ • Python 3.8+  │    │ • OpenCV        │
+│ • Tailwind CSS  │    │ • PostgreSQL    │    │ • PyTorch       │
+│ • Zustand       │    │ • WebSockets    │    │ • FAISS         │
+│ • Axios         │    │ • JWT Auth      │    │ • ByteTracker   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
 ## 🚀 Quick Start
 
-### 1. Installation
+### ⚡ 5-Minute Setup
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone <repository-url>
 cd face-recognition-attendance-system
 
-# Create virtual environment (recommended)
+# 2. Create virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # or
 venv\Scripts\activate  # Windows
 
-# Install dependencies
+# 3. Copy environment files
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# 4. Install all dependencies
 pip install -r requirements.txt
-```
+cd frontend && npm install && cd ..
 
-### 2. Start the System
+# 5. Setup database
+python setup_postgresql.py  # Creates PostgreSQL database
+python backend/init_db.py   # Initializes tables and sample data
 
-```bash
-# Start the unified server with face tracking enabled
+# 6. Start the unified server with face tracking
 python start_unified_server.py --enable-fts
-
-# Or start API only (without face detection)
-python start_server.py
 ```
 
-### 3. Access the Application
-
+### 🌐 Access Points
 - **Web Interface**: http://localhost:3000
 - **API Documentation**: http://localhost:8000/docs
-- **Admin Panel**: Login with super admin credentials
+- **Admin Panel**: Login with credentials below
 
-### 4. Default Login Credentials
+### 👤 Default Login Credentials
+```
+Super Admin: admin / admin123
+HR Manager:  hr_manager / hr123
+Employee:    john.doe / john123
+```
 
-```
-Username: admin
-Password: admin
-Role: Super Admin
-```
+### 🛠️ Essential Commands
+
+| Command | Description |
+|---------|-------------|
+| `python start_unified_server.py --enable-fts` | Start with face tracking |
+| `python start_server.py` | Start API only (no face detection) |
+| `python cleanup_port.py` | Fix port 8000 conflicts |
+| `python test_installation.py` | Verify installation |
+| `python setup_postgresql.py` | Setup PostgreSQL database |
 
 ## 📋 System Requirements
 
 ### Minimum Requirements
 - **OS**: Windows 10/11, Ubuntu 18+, macOS 10.14+
 - **Python**: 3.8 or higher
+- **Node.js**: 16.x or higher (for frontend development)
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 2GB free space
 - **Network**: For IP camera connectivity
@@ -79,20 +125,36 @@ Role: Super Admin
 - **RAM**: 16GB+ for multiple cameras
 - **GPU**: NVIDIA GPU for accelerated processing
 - **CPU**: Multi-core processor (Intel i5/AMD Ryzen 5+)
+- **Database**: PostgreSQL 12+ (recommended over SQLite)
 
-## 🔧 Detailed Installation
+### Software Dependencies
+```bash
+# Core requirements
+Python 3.8+         # Backend runtime
+Node.js 16+         # Frontend build tools (optional)
+PostgreSQL 12+      # Database server (recommended)
+Git                 # Version control
+
+# Optional (for GPU acceleration)
+CUDA Toolkit 11.x   # For GPU-accelerated face recognition
+```
+
+## 🔧 Installation
 
 ### Method 1: Standard Installation
 
 ```bash
-# Install core dependencies first
-pip install fastapi uvicorn sqlalchemy requests
+# Install core dependencies
+pip install fastapi uvicorn sqlalchemy requests python-dotenv
 
 # Install computer vision libraries
 pip install opencv-python numpy Pillow
 
 # Install face recognition libraries
 pip install onnxruntime faiss-cpu insightface
+
+# Install all dependencies at once
+pip install -r requirements.txt
 ```
 
 ### Method 2: GPU Accelerated Installation
@@ -115,40 +177,314 @@ docker build -t face-recognition-attendance .
 docker run -p 8000:8000 -p 3000:3000 face-recognition-attendance
 ```
 
+### System Dependencies (Ubuntu/Debian)
+```bash
+# Install system packages
+sudo apt update
+sudo apt install -y \
+  python3 python3-pip python3-dev \
+  nodejs npm \
+  postgresql postgresql-contrib \
+  build-essential cmake \
+  libopencv-dev python3-opencv \
+  git curl wget
+```
+
 ## 🎛️ Configuration
 
-### Environment Variables
+### Quick Configuration Setup
+```bash
+# Copy environment templates
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# Validate configuration
+python check_env.py
+```
+
+### Root Environment Variables (.env)
 
 Create a `.env` file in the project root:
 
 ```env
-# Database Configuration
-DATABASE_URL=sqlite:///./backend/face_attendance.db
+# Database Configuration - PostgreSQL (Recommended)
+DB_TYPE=postgresql
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=face_attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password_here
 
-# Security Settings
-SECRET_KEY=your-secret-key-here
+# Alternative: SQLite (for development)
+# DATABASE_URL=sqlite:///./backend/face_attendance.db
+
+# JWT & Security Configuration
+SECRET_KEY=your-secret-key-change-in-production-2024
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# FTS Settings
+# Application Settings
+DEBUG=true
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+LOG_FILE=logs/app.log
+
+# Face Recognition Settings
+FACE_RECOGNITION_TOLERANCE=0.6
+FACE_CONFIDENCE_THRESHOLD=0.6
+FACE_DETECTION_MODEL=hog
+FACE_ENCODING_MODEL=large
+EMBEDDING_MODEL=facenet
+
+# Camera Settings
+DEFAULT_CAMERA_ID=0
+CAMERA_RESOLUTION_WIDTH=640
+CAMERA_RESOLUTION_HEIGHT=480
+CAMERA_FPS=30
+MAX_CONCURRENT_STREAMS=5
+STREAM_QUALITY=medium
+FRAME_RATE=30
+
+# CORS Configuration
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+
+# File Storage
+UPLOAD_DIR=uploads
+FACE_IMAGES_DIR=face_images
+MAX_FILE_SIZE=10485760
+
+# Face Tracking System Configuration
 FTS_AUTO_START=true
 FTS_STARTUP_DELAY=3
+FACE_TRACKING_AUTO_START=true
 
-# Server Settings
+# Logging Configuration
+LOG_ROTATION=1 day
+LOG_RETENTION=30 days
+```
+
+### Backend Environment Variables (backend/.env)
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=face_attendance_db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password_here
+
+# Security Configuration
+SECRET_KEY=your-secret-key-change-in-production-2024
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# Application Configuration
+ENVIRONMENT=development
 DEBUG=true
-CORS_ORIGINS=["http://localhost:3000"]
+LOG_LEVEL=INFO
+
+# CORS Configuration
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Face Recognition Configuration
+FACE_RECOGNITION_TOLERANCE=0.6
+FACE_DETECTION_MODEL=hog
+FACE_ENCODING_MODEL=large
+
+# Camera Configuration
+DEFAULT_CAMERA_ID=0
+MAX_CONCURRENT_STREAMS=5
+STREAM_QUALITY=medium
+FRAME_RATE=30
+
+# File Storage
+UPLOAD_DIR=uploads
+FACE_IMAGES_DIR=face_images
+MAX_FILE_SIZE=10485760
+
+# Face Tracking System Configuration
+FTS_AUTO_START=true
+FTS_STARTUP_DELAY=2
 ```
 
-### Camera Configuration
+### Frontend Environment Variables (frontend/.env)
 
-The system comes with pre-configured test cameras:
+```env
+# API Configuration
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_BASE_URL=http://localhost:8000
 
-```python
-# Test cameras (modify IP addresses for your network)
-Main Entrance Camera: 192.168.1.100
-Exit Door Camera: 192.168.1.101
-Conference Room Camera: 192.168.1.102
+# Build Configuration
+GENERATE_SOURCEMAP=false
+SKIP_PREFLIGHT_CHECK=true
+
+# Development Configuration
+FAST_REFRESH=true
+ESLINT_NO_DEV_ERRORS=true
+DISABLE_ESLINT_PLUGIN=false
+
+# Camera & Media Configuration
+REACT_APP_DEFAULT_CAMERA_ID=0
+REACT_APP_MAX_FILE_SIZE=10485760
+
+# UI Configuration
+REACT_APP_APP_NAME=Face Recognition Attendance System
+REACT_APP_VERSION=1.0.0
+
+# Performance Configuration
+INLINE_RUNTIME_CHUNK=false
+IMAGE_INLINE_SIZE_LIMIT=10000
 ```
+
+## 🗄️ Database Setup
+
+### PostgreSQL Setup (Recommended)
+
+#### 1. Install PostgreSQL
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+
+#### 2. Configure PostgreSQL
+```bash
+# Switch to postgres user
+sudo -u postgres psql
+
+# Create database and user
+CREATE DATABASE face_attendance_db;
+CREATE USER postgres WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE face_attendance_db TO postgres;
+\q
+```
+
+#### 3. Automated Setup
+```bash
+# Use automated setup script
+python setup_postgresql.py
+
+# Initialize database with sample data
+python backend/init_db.py
+```
+
+### SQLite Setup (Alternative)
+
+For development or testing, you can use SQLite:
+
+```env
+# In your .env file
+DATABASE_URL=sqlite:///./backend/face_attendance.db
+```
+
+### Database Schema
+
+The system creates these main tables:
+- `employees` - Employee information and profiles
+- `user_accounts` - Authentication and user data
+- `departments` - Organizational structure
+- `attendance_logs` - Attendance records and timestamps
+- `face_embeddings` - Face recognition vector data
+- `camera_configs` - Camera configurations and settings
+
+### Sample Data
+
+The initialization script creates:
+- **Departments**: Engineering, HR, Sales
+- **Employees**: John Doe, Jane Smith, Mike Johnson
+- **User Accounts**: Admin, HR Manager, Employee users
+- **Cameras**: Main Entrance Camera (ID: 0)
+
+## 🚀 Starting the System
+
+### Development Mode (Recommended)
+```bash
+# Start unified server with face tracking enabled
+python start_unified_server.py --enable-fts
+
+# This includes:
+# - FastAPI backend on port 8000
+# - Face tracking system
+# - WebSocket support for real-time updates
+```
+
+### Production Mode
+```bash
+# Start production server (without development features)
+python start_unified_server.py --workers 4
+```
+
+### Individual Components
+```bash
+# Backend API only (without face detection)
+python start_server.py
+
+# Face detection system only
+python start_face_detection.py
+
+# Development with auto-reload
+python start_unified_server.py --reload
+```
+
+### Advanced Startup Options
+```bash
+# Force start (kills conflicting processes)
+python start_unified_server.py --force
+
+# Start on different port
+python start_unified_server.py --port 8001
+
+# Initialize database and start
+python start_unified_server.py --init-db
+
+# Start without Face Tracking System
+python start_unified_server.py --no-fts
+
+# Skip pre-startup checks
+python start_unified_server.py --skip-checks
+```
+
+### Frontend Development (Optional)
+```bash
+# If you want to modify the frontend
+cd frontend
+npm install
+npm start  # Starts on http://localhost:3000
+```
+
+## 👤 Default Credentials
+
+### User Accounts Created
+
+| Username | Password | Role | Description |
+|----------|----------|------|-------------|
+| `admin` | `admin123` | Super Admin | Full system access, user management |
+| `hr_manager` | `hr123` | Admin | HR management, employee operations |
+| `john.doe` | `john123` | Employee | Personal dashboard access |
+| `mike.johnson` | `mike123` | Employee | Personal dashboard access |
+
+### Employee Records
+
+| Employee ID | Name | Department | Role |
+|-------------|------|------------|------|
+| EMP001 | John Doe | Engineering | Software Engineer |
+| EMP002 | Jane Smith | HR | HR Manager |
+| EMP003 | Mike Johnson | Engineering | Senior Developer |
+
+### Access Levels
+
+- **Super Admin**: User management, system configuration, all features
+- **Admin**: Employee management, attendance tracking, camera management
+- **Employee**: Personal dashboard, attendance history, profile management
 
 ## 📖 Usage Guide
 
@@ -213,13 +549,24 @@ Conference Room Camera: 192.168.1.102
    - Use camera ID (0, 1, 2, etc.)
    - Local video devices
 
-### Camera Discovery
+### Pre-configured Test Cameras
 
-1. Navigate to Camera Management
+The system comes with test cameras configured:
+
+```python
+# Test cameras (modify IP addresses for your network)
+Main Entrance Camera: 192.168.1.100
+Exit Door Camera: 192.168.1.101
+Conference Room Camera: 192.168.1.102
+```
+
+### Camera Discovery Process
+
+1. Navigate to Camera Management in the web interface
 2. Click "Discover Cameras"
 3. Enter network range (e.g., 192.168.1.0/24)
 4. System will auto-detect compatible cameras
-5. Configure discovered cameras
+5. Configure discovered cameras with credentials
 
 ### Manual Camera Configuration
 
@@ -239,7 +586,17 @@ Conference Room Camera: 192.168.1.102
 }
 ```
 
-## 🧪 Testing Installation
+### Face Enrollment Process
+
+1. **Navigate to Employee Management**
+2. **Select Employee → Enroll Face**
+3. **Capture/Upload Face Images**
+4. **System generates face embeddings**
+5. **Face is ready for recognition**
+
+## 🔧 Troubleshooting
+
+### Installation Verification
 
 Run these commands to verify your setup:
 
@@ -255,9 +612,10 @@ python -c "import cv2; cap = cv2.VideoCapture(0); print('Camera:', cap.isOpened(
 
 # Test server startup
 python -c "from backend.app.main import app; print('FastAPI: OK')"
-```
 
-## 🔧 Troubleshooting
+# Run comprehensive test
+python test_installation.py
+```
 
 ### Common Installation Issues
 
@@ -320,35 +678,151 @@ set INSIGHTFACE_MODEL_PATH=./models     # Windows
 3. **Enable GPU acceleration** - Install GPU versions of libraries
 4. **Limit active cameras** - Process fewer cameras simultaneously
 
-### Development Issues
-
-#### Port Conflicts
-```bash
-# Kill processes using ports 8000 or 3000
-python cleanup_port.py
-# or manually:
-netstat -ano | findstr :8000  # Windows
-lsof -ti:8000 | xargs kill -9  # Linux/Mac
-```
-
 #### Database Issues
 ```bash
+# Test database connection
+python setup_postgresql.py
+
 # Reset database
-rm backend/face_attendance.db
 python backend/init_db.py
+
+# Check database status
+psql -h localhost -U postgres -d face_attendance_db
 ```
+
+## 🚨 Port Conflict Solutions
+
+### The Problem
+The error `[Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000)` occurs when:
+
+1. Another process is already using port 8000
+2. A previous server instance didn't shut down properly
+3. Another application is bound to port 8000
+
+### Solutions (Multiple Options)
+
+#### Option 1: Automatic Fix (Recommended)
+```bash
+# Force start with automatic port cleanup
+python start_unified_server.py --force
+```
+
+#### Option 2: Manual Port Cleanup
+```bash
+# Clean up port 8000 first, then start normally
+python cleanup_port.py
+python start_unified_server.py
+```
+
+#### Option 3: Use Cleanup Scripts
+```bash
+# Linux/Mac:
+./fix_port_conflict.sh
+
+# Windows:
+fix_port_conflict.bat
+```
+
+#### Option 4: Use Different Port
+```bash
+# Start server on a different port (e.g., 8001)
+python start_unified_server.py --port 8001
+```
+
+#### Option 5: Manual Process Termination
+
+**Windows:**
+```cmd
+# Find process using port 8000
+netstat -ano | findstr :8000
+
+# Kill the process (replace <PID> with actual process ID)
+taskkill /f /pid <PID>
+```
+
+**Linux/Mac:**
+```bash
+# Find and kill process using port 8000
+lsof -ti:8000 | xargs kill -9
+```
+
+### Prevention Tips
+
+1. **Always use Ctrl+C to stop the server** instead of closing the terminal window
+2. **Use the `--force` flag** when you know port conflicts might occur
+3. **Check running processes** before starting if issues persist
+4. **Use different ports** for multiple instances
+
+### Testing the Fix
+
+```bash
+# Test port availability
+python cleanup_port.py 8000
+
+# Test server startup with force cleanup
+python start_unified_server.py --force
+
+# Test alternative port
+python start_unified_server.py --port 8001
+```
+
+## 🌍 Environment Configuration
+
+### Configuration Validation
+
+```bash
+# Check all environment files exist
+ls -la .env backend/.env frontend/.env
+
+# Validate configuration
+python check_env.py
+
+# Test database connection
+python setup_postgresql.py
+```
+
+### Configuration Options Reference
+
+#### Security Settings
+- **SECRET_KEY**: JWT signing key (change in production!)
+- **ALGORITHM**: JWT algorithm (HS256 recommended)
+- **ACCESS_TOKEN_EXPIRE_MINUTES**: Token expiration time
+
+#### Face Recognition Settings
+- **FACE_RECOGNITION_TOLERANCE**: Recognition sensitivity (0.4-0.8)
+- **FACE_DETECTION_MODEL**: Detection algorithm (hog/cnn)
+- **FACE_ENCODING_MODEL**: Encoding quality (small/large)
+
+#### Camera Settings
+- **DEFAULT_CAMERA_ID**: Default camera index (0 for built-in)
+- **MAX_CONCURRENT_STREAMS**: Maximum simultaneous camera streams
+- **STREAM_QUALITY**: Video quality (low/medium/high)
+
+#### File Storage
+- **UPLOAD_DIR**: Directory for file uploads
+- **FACE_IMAGES_DIR**: Directory for face images
+- **MAX_FILE_SIZE**: Maximum upload file size in bytes
+
+### Common Configuration Issues
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError: No module named 'dotenv'` | Install python-dotenv: `pip install python-dotenv` |
+| Database connection failed | Check PostgreSQL service and credentials |
+| Frontend can't connect to API | Check REACT_APP_API_URL in frontend/.env |
+| Face recognition not working | Verify camera permissions and face recognition settings |
 
 ## 📊 Performance Optimization
 
 ### CPU Optimization
 ```python
-# Reduce frame processing
-FRAME_SKIP = 2  # Process every 2nd frame
-DETECTION_INTERVAL = 0.1  # 100ms between detections
+# In your configuration (.env file)
+FRAME_SKIP=2  # Process every 2nd frame
+DETECTION_INTERVAL=0.1  # 100ms between detections
 
 # Lower resolution
-CAMERA_WIDTH = 1280  # Instead of 1920
-CAMERA_HEIGHT = 720   # Instead of 1080
+CAMERA_WIDTH=1280  # Instead of 1920
+CAMERA_HEIGHT=720   # Instead of 1080
 ```
 
 ### GPU Acceleration
@@ -365,9 +839,31 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 - **Limit concurrent cameras**: Max 4 cameras on 8GB RAM
 - **Enable frame buffering**: Reduce memory spikes
 
-## 🐳 Docker Deployment
+## 🚀 Production Deployment
 
-### Build Container
+### Environment Setup
+```env
+# Production .env settings
+ENVIRONMENT=production
+DEBUG=false
+LOG_LEVEL=WARNING
+
+# Strong security
+SECRET_KEY=your-very-strong-production-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Database
+DB_HOST=your-production-db-host
+DB_PASSWORD=your-strong-database-password
+
+# Performance
+MAX_CONCURRENT_STREAMS=3
+FACE_RECOGNITION_TOLERANCE=0.5
+```
+
+### Docker Deployment
+
+#### Build Container
 ```bash
 # Build the image
 docker build -t face-recognition-system .
@@ -381,7 +877,7 @@ docker run -d \
   face-recognition-system
 ```
 
-### Docker Compose
+#### Docker Compose
 ```yaml
 version: '3.8'
 services:
@@ -396,11 +892,115 @@ services:
     environment:
       - FTS_AUTO_START=true
       - DEBUG=false
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: face_attendance_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### Production Considerations
+
+#### Security
+- [ ] Change SECRET_KEY to a strong, unique value
+- [ ] Use environment-specific database credentials
+- [ ] Set DEBUG=false
+- [ ] Configure proper CORS origins
+- [ ] Use HTTPS URLs in production
+
+#### Performance
+- [ ] Set appropriate FACE_RECOGNITION_TOLERANCE
+- [ ] Configure MAX_CONCURRENT_STREAMS based on hardware
+- [ ] Set LOG_LEVEL=WARNING or ERROR in production
+- [ ] Enable GPU acceleration if available
+
+#### Database
+- [ ] Use separate database for production
+- [ ] Configure database connection pooling
+- [ ] Set up database backups
+- [ ] Monitor database performance
+
+## 📚 API Documentation
+
+### Access API Documentation
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
+
+### API Routes Overview
+```
+🔐 Authentication (/auth)
+├── POST /login              # User login
+├── POST /logout             # User logout
+└── GET  /me                 # Current user info
+
+👥 Employees (/employees)
+├── GET    /employees        # List employees
+├── POST   /employees        # Create employee
+├── PUT    /employees/{id}   # Update employee
+└── DELETE /employees/{id}   # Delete employee
+
+📊 Attendance (/attendance)
+├── GET  /attendance         # Attendance records
+├── POST /attendance/checkin # Manual check-in
+└── POST /attendance/checkout# Manual check-out
+
+🎥 Cameras (/cameras)
+├── GET  /cameras            # List cameras
+├── POST /cameras            # Add camera
+└── PUT  /cameras/{id}       # Update camera
+
+🎦 Streaming (/streaming)
+├── GET  /stream/{camera_id} # Live video stream
+└── WS   /ws/video           # WebSocket video feed
+```
+
+### Authentication
+```bash
+# Login
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+
+# Use token
+curl -H "Authorization: Bearer your_token_here" \
+  "http://localhost:8000/employees"
+```
+
+### Example API Calls
+```bash
+# Get employees
+curl "http://localhost:8000/employees" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Create employee
+curl -X POST "http://localhost:8000/employees" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "employee_id": "EMP004",
+    "name": "New Employee",
+    "department_id": 1,
+    "role": "Developer"
+  }'
+
+# Get attendance records
+curl "http://localhost:8000/attendance" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 🔐 Security Considerations
 
-### Production Deployment
+### Production Security Checklist
 1. **Change default credentials** immediately
 2. **Use strong SECRET_KEY** in environment variables
 3. **Enable HTTPS** with SSL certificates
@@ -413,9 +1013,9 @@ services:
 - Employee data is encrypted in database
 - Access logs track all system interactions
 
-## 📈 Monitoring and Logging
+### Monitoring and Logging
 
-### System Logs
+#### System Logs
 ```bash
 # View application logs
 tail -f backend/logs/app.log
@@ -427,7 +1027,7 @@ tail -f backend/logs/fts.log
 curl http://localhost:8000/system/status
 ```
 
-### Performance Metrics
+#### Performance Metrics
 - CPU/Memory usage via `/system/status` endpoint
 - Camera processing rates in logs
 - Face detection accuracy metrics
@@ -465,16 +1065,59 @@ mypy backend/
 └── data/           # Application data
 ```
 
+## 🆘 Quick Reference & Emergency Commands
+
+### Essential Commands
+```bash
+# Quick Setup
+python setup_postgresql.py && python backend/init_db.py
+
+# Start System
+python start_unified_server.py --enable-fts
+
+# Fix Common Issues
+python cleanup_port.py                    # Fix port conflicts
+python test_installation.py              # Test installation
+python verify_imports.py                 # Test imports
+
+# Emergency Reset
+rm -rf backend/__pycache__ models/
+python backend/init_db.py
+```
+
+### Important URLs
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+### Default Logins (Change in Production!)
+- **Super Admin**: `admin` / `admin123`
+- **Admin**: `hr_manager` / `hr123`
+- **Employee**: `john.doe` / `john123`
+
+### Debug Commands
+```bash
+# Backend debug mode
+DEBUG=true python start_unified_server.py --reload
+
+# Check logs
+tail -f backend/logs/app.log
+
+# Database debug
+python -c "from backend.db.db_config import test_connection; test_connection()"
+```
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 📞 Support
 
 ### Getting Help
 1. **Check this README** - Most issues are covered here
 2. **Review logs** - Check console output for error details
-3. **Test installation** - Use the test commands provided
+3. **Test installation** - Use `python test_installation.py`
 4. **Check GitHub Issues** - Search for similar problems
 
 ### Creating Issues
@@ -482,7 +1125,7 @@ When reporting bugs, include:
 - Operating system and Python version
 - Complete error messages
 - Steps to reproduce the issue
-- Output of test commands
+- Output of `python test_installation.py`
 
 ## 🚀 What's Next?
 
