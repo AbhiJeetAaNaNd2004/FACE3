@@ -94,9 +94,7 @@ export const DashboardLayout: React.FC = () => {
         { name: 'Camera Management', href: '/super-admin/cameras', icon: CameraIcon },
         { name: 'Live Monitor', href: '/super-admin/monitor', icon: CameraIcon },
       );
-    }
-
-    if (hasRole(user, UserRole.ADMIN)) {
+    } else if (hasRole(user, UserRole.ADMIN)) {
       items.push(
         { name: 'Dashboard', href: '/admin', icon: HomeIcon },
         { name: 'Employee Management', href: '/admin/employees', icon: UsersIcon },
@@ -104,9 +102,7 @@ export const DashboardLayout: React.FC = () => {
         { name: 'Camera Management', href: '/admin/cameras', icon: CameraIcon },
         { name: 'Live Monitor', href: '/admin/monitor', icon: CameraIcon },
       );
-    }
-
-    if (hasRole(user, UserRole.EMPLOYEE)) {
+    } else if (hasRole(user, UserRole.EMPLOYEE)) {
       items.push(
         { name: 'My Dashboard', href: '/employee', icon: HomeIcon },
         { name: 'My Attendance', href: '/employee/attendance', icon: ClockIcon },
