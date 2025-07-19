@@ -65,7 +65,7 @@ def test_database_models():
         employee = Employee(
             employee_id="TEST001",
             name="Test Employee",
-            department="Testing",
+            department_id=1,  # Using a valid department ID
             role="Tester",
             date_joined=date.today()
         )
