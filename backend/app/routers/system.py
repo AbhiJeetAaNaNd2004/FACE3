@@ -56,12 +56,24 @@ async def get_system_status_endpoint(
                 fts_status = fts_functions['get_system_status']()
                 fts_status["is_running"] = fts_functions['is_tracking_running']
                 fts_status["fts_available"] = True
+                
+                # Add additional FTS debugging info
+                from core.fts_system import system_instance
+                if system_instance:
+                    fts_status["camera_threads"] = len(getattr(system_instance, 'camera_threads', []))
+                    fts_status["fts_instance_created"] = True
+                else:
+                    fts_status["camera_threads"] = 0
+                    fts_status["fts_instance_created"] = False
+                    
             except Exception as e:
                 logger.error(f"Error getting FTS status: {e}")
                 fts_status = {
                     "is_running": False,
                     "fts_available": True,
-                    "error": str(e)
+                    "error": str(e),
+                    "camera_threads": 0,
+                    "fts_instance_created": False
                 }
         else:
             # FTS system not available - provide basic status
