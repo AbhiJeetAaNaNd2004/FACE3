@@ -213,6 +213,27 @@ class ApiService {
     return response.data;
   }
 
+  // Camera Detection and Configuration
+  async detectAllCameras(): Promise<any> {
+    const response = await this.api.post<any>('/cameras/detect-all');
+    return response.data;
+  }
+
+  async configureCameraForFts(configData: any): Promise<MessageResponse> {
+    const response = await this.api.post<MessageResponse>('/cameras/configure-for-fts', configData);
+    return response.data;
+  }
+
+  async removeCameraFromFts(databaseCameraId: number): Promise<MessageResponse> {
+    const response = await this.api.delete<MessageResponse>(`/cameras/fts-configuration/${databaseCameraId}`);
+    return response.data;
+  }
+
+  async getFtsConfiguredCameras(): Promise<any> {
+    const response = await this.api.get<any>('/cameras/fts-configured');
+    return response.data;
+  }
+
   // System endpoints
   async startFaceDetection(): Promise<MessageResponse> {
     const response = await this.api.post<MessageResponse>('/system/start');

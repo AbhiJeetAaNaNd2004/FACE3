@@ -775,12 +775,76 @@ async def auto_detect_cameras(
             detail=f"Failed to auto-detect cameras: {str(e)}"
         )
 
+@router.post("/detect-all")
+async def detect_all_cameras(
+    current_user: CurrentUser = Depends(require_super_admin)
+):
+    """
+    Run comprehensive camera detection and return all found cameras (Super Admin only)
+    """
+    try:
+        from utils.auto_camera_detector import get_auto_detector
+        
+        logger.info("Starting comprehensive camera detection...")
+        auto_detector = get_auto_detector()
+        
+        # Run detection
+        detected_cameras = await auto_detector.detect_all_cameras()
+        
+        # Convert to API response format with enhanced information
+        camera_list = []
+        for camera in detected_cameras:
+            # Check if camera is already configured in FTS
+            db_manager = DatabaseManager()
+            db_camera = db_manager.get_camera_by_source(camera.source)
+            
+            camera_dict = {
+                "camera_id": camera.camera_id,
+                "name": camera.name,
+                "type": camera.type,
+                "source": camera.source,
+                "resolution": f"{camera.resolution[0]}x{camera.resolution[1]}",
+                "resolution_width": camera.resolution[0],
+                "resolution_height": camera.resolution[1],
+                "fps": camera.fps,
+                "status": camera.status,
+                "is_working": camera.is_working,
+                "last_seen": camera.last_seen.isoformat() if camera.last_seen else None,
+                "ip_address": camera.ip_address,
+                "stream_url": camera.stream_url,
+                "is_configured_for_fts": db_camera is not None,
+                "fts_config": {
+                    "database_id": db_camera.id if db_camera else None,
+                    "enabled": db_camera.is_active if db_camera else False,
+                    "camera_name": db_camera.name if db_camera else None,
+                    "location": db_camera.location if db_camera else None
+                } if db_camera else None
+            }
+            camera_list.append(camera_dict)
+        
+        return {
+            "success": True,
+            "data": {
+                "detected_cameras": camera_list,
+                "total_detected": len(camera_list),
+                "working_cameras": len([c for c in detected_cameras if c.is_working]),
+                "configured_cameras": len([c for c in camera_list if c["is_configured_for_fts"]]),
+                "available_for_configuration": len([c for c in camera_list if c["is_working"] and not c["is_configured_for_fts"]])
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to detect all cameras: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to detect cameras: {str(e)}"
+        )
+
 @router.get("/detected")
 async def get_detected_cameras(
     current_user: CurrentUser = Depends(require_admin_or_above)
 ):
     """
-    Get list of currently detected cameras (Admin+ only)
+    Get list of previously detected cameras from cache (Admin+ only)
     """
     try:
         from utils.auto_camera_detector import get_auto_detector
@@ -791,6 +855,10 @@ async def get_detected_cameras(
         # Convert to API response format
         camera_list = []
         for camera in detected_cameras:
+            # Check if camera is already configured in FTS
+            db_manager = DatabaseManager()
+            db_camera = db_manager.get_camera_by_source(camera.source)
+            
             camera_dict = {
                 "camera_id": camera.camera_id,
                 "name": camera.name,
@@ -802,7 +870,8 @@ async def get_detected_cameras(
                 "is_working": camera.is_working,
                 "last_seen": camera.last_seen.isoformat() if camera.last_seen else None,
                 "ip_address": camera.ip_address,
-                "stream_url": camera.stream_url
+                "stream_url": camera.stream_url,
+                "is_configured_for_fts": db_camera is not None
             }
             camera_list.append(camera_dict)
             
@@ -929,4 +998,216 @@ async def get_supported_resolutions(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get supported resolutions: {str(e)}"
+        )
+
+@router.post("/configure-for-fts")
+async def configure_camera_for_fts(
+    request: dict,
+    current_user: CurrentUser = Depends(require_super_admin)
+):
+    """
+    Configure a detected camera for FTS use (Super Admin only)
+    
+    Expected request format:
+    {
+        "detected_camera_id": int,
+        "camera_name": str,
+        "location": str,
+        "camera_type": str,  # "entry", "exit", "monitoring"
+        "enabled": bool,
+        "tripwires": [
+            {
+                "name": str,
+                "position": float,
+                "direction": str,  # "horizontal", "vertical"
+                "spacing": float
+            }
+        ]
+    }
+    """
+    try:
+        from utils.auto_camera_detector import get_auto_detector
+        
+        # Get the detected camera
+        auto_detector = get_auto_detector()
+        detected_cameras = auto_detector.get_detected_cameras()
+        
+        detected_camera_id = request.get("detected_camera_id")
+        detected_camera = next((c for c in detected_cameras if c.camera_id == detected_camera_id), None)
+        
+        if not detected_camera:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Detected camera with ID {detected_camera_id} not found"
+            )
+        
+        if not detected_camera.is_working:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot configure a non-working camera for FTS"
+            )
+        
+        # Check if camera is already configured
+        db_manager = DatabaseManager()
+        existing_camera = db_manager.get_camera_by_source(detected_camera.source)
+        
+        if existing_camera:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Camera is already configured for FTS (Database ID: {existing_camera.id})"
+            )
+        
+        # Create camera configuration in database
+        camera_data = {
+            "name": request.get("camera_name", detected_camera.name),
+            "location": request.get("location", "Unknown"),
+            "camera_type": request.get("camera_type", "monitoring"),
+            "source": detected_camera.source,
+            "resolution_width": detected_camera.resolution[0],
+            "resolution_height": detected_camera.resolution[1],
+            "fps": detected_camera.fps,
+            "is_active": request.get("enabled", True),
+            "ip_address": detected_camera.ip_address,
+            "stream_url": detected_camera.stream_url
+        }
+        
+        # Create camera in database
+        new_camera = db_manager.create_camera(camera_data)
+        
+        # Create tripwires if provided
+        tripwires_data = request.get("tripwires", [])
+        created_tripwires = []
+        
+        for tripwire_data in tripwires_data:
+            tripwire = {
+                "camera_id": new_camera.id,
+                "name": tripwire_data.get("name", "Detection Zone"),
+                "position": tripwire_data.get("position", 0.5),
+                "direction": tripwire_data.get("direction", "horizontal"),
+                "spacing": tripwire_data.get("spacing", 0.05)
+            }
+            created_tripwire = db_manager.create_tripwire(tripwire)
+            created_tripwires.append(created_tripwire)
+        
+        return {
+            "success": True,
+            "message": f"Camera '{camera_data['name']}' successfully configured for FTS",
+            "data": {
+                "database_camera_id": new_camera.id,
+                "camera_name": new_camera.name,
+                "location": new_camera.location,
+                "is_active": new_camera.is_active,
+                "tripwires_created": len(created_tripwires),
+                "detected_camera_info": {
+                    "id": detected_camera.camera_id,
+                    "type": detected_camera.type,
+                    "source": detected_camera.source,
+                    "resolution": f"{detected_camera.resolution[0]}x{detected_camera.resolution[1]}"
+                }
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to configure camera for FTS: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to configure camera for FTS: {str(e)}"
+        )
+
+@router.delete("/fts-configuration/{database_camera_id}")
+async def remove_camera_from_fts(
+    database_camera_id: int,
+    current_user: CurrentUser = Depends(require_super_admin)
+):
+    """
+    Remove a camera from FTS configuration (Super Admin only)
+    """
+    try:
+        db_manager = DatabaseManager()
+        
+        # Get camera from database
+        camera = db_manager.get_camera(database_camera_id)
+        if not camera:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Camera with ID {database_camera_id} not found in FTS configuration"
+            )
+        
+        # Delete camera and associated tripwires
+        db_manager.delete_camera(database_camera_id)
+        
+        return {
+            "success": True,
+            "message": f"Camera '{camera.name}' removed from FTS configuration",
+            "data": {
+                "removed_camera_id": database_camera_id,
+                "camera_name": camera.name
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to remove camera from FTS: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to remove camera from FTS: {str(e)}"
+        )
+
+@router.get("/fts-configured")
+async def get_fts_configured_cameras(
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Get all cameras currently configured for FTS use (Admin+ only)
+    """
+    try:
+        db_manager = DatabaseManager()
+        configured_cameras = db_manager.get_all_cameras()
+        
+        camera_list = []
+        for camera in configured_cameras:
+            # Get tripwires for this camera
+            tripwires = db_manager.get_camera_tripwires(camera.id)
+            
+            camera_dict = {
+                "id": camera.id,
+                "name": camera.name,
+                "location": camera.location,
+                "camera_type": camera.camera_type,
+                "source": camera.source,
+                "resolution": f"{camera.resolution_width}x{camera.resolution_height}",
+                "fps": camera.fps,
+                "is_active": camera.is_active,
+                "ip_address": camera.ip_address,
+                "stream_url": camera.stream_url,
+                "created_at": camera.created_at.isoformat() if camera.created_at else None,
+                "tripwires": [
+                    {
+                        "id": tw.id,
+                        "name": tw.name,
+                        "position": tw.position,
+                        "direction": tw.direction,
+                        "spacing": tw.spacing
+                    } for tw in tripwires
+                ]
+            }
+            camera_list.append(camera_dict)
+        
+        return {
+            "success": True,
+            "data": {
+                "configured_cameras": camera_list,
+                "total_configured": len(camera_list),
+                "active_cameras": len([c for c in camera_list if c["is_active"]])
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get FTS configured cameras: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get FTS configured cameras: {str(e)}"
         )

@@ -24,6 +24,12 @@ const CameraIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const SearchIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
 const ClockIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -92,6 +98,7 @@ export const DashboardLayout: React.FC = () => {
         { name: 'Employee Management', href: '/super-admin/employees', icon: UsersIcon },
         { name: 'Attendance', href: '/super-admin/attendance', icon: ClockIcon },
         { name: 'Camera Management', href: '/super-admin/cameras', icon: CameraIcon },
+        { name: 'Camera Detection', href: '/super-admin/camera-detection', icon: SearchIcon },
         { name: 'Live Monitor', href: '/super-admin/monitor', icon: CameraIcon },
       );
     } else if (hasRole(user, UserRole.ADMIN)) {

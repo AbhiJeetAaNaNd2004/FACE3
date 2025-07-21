@@ -145,10 +145,11 @@ sudo apt install -y \
 - **📡 Live Monitoring** - Real-time camera feeds with detection overlays
 
 ### 🔧 **Advanced Features**
-- **🔍 Zero-Configuration Setup** - FTS automatically detects and configures all cameras on startup
-- **⚙️ Individual Camera Settings** - Configure name, resolution, FPS, location per camera
-- **📐 Tripwire Detection** - Configurable entry/exit zones with directional detection
+- **🔍 Comprehensive Camera Detection** - Detects USB, built-in, and IP cameras automatically
+- **⚙️ Smart Camera Configuration** - Super admin interface for selecting and configuring cameras for FTS
+- **📐 Advanced Tripwire System** - Configurable detection zones with directional crossing detection
 - **🌐 ONVIF Camera Discovery** - Automatic network camera detection and integration
+- **🎛️ Granular Camera Control** - Enable/disable cameras, adjust settings, and manage FTS integration
 - **⚡ Real-time Updates** - WebSocket-based live activity feeds
 - **🔐 JWT Authentication** - Secure token-based authentication system
 - **📈 Performance Monitoring** - Real-time system stats and camera performance metrics
