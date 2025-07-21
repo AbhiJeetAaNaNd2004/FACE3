@@ -57,7 +57,7 @@ def optimize_system_memory():
 
 def configure_pytorch_memory():
     """Configure PyTorch memory settings"""
-    print("🔧 Configuring PyTorch memory settings...")
+    print("Configuring PyTorch memory settings...")
     
     try:
         import torch
@@ -91,7 +91,7 @@ def configure_pytorch_memory():
 
 def check_virtual_memory():
     """Check and display virtual memory information"""
-    print("📊 Checking system memory...")
+    print("Checking system memory...")
     
     try:
         # Get virtual memory info

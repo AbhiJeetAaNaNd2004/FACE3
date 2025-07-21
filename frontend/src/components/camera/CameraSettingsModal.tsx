@@ -62,9 +62,9 @@ export const CameraSettingsModal: React.FC<CameraSettingsModalProps> = ({
 
   const loadSupportedResolutions = async (cameraId: number) => {
     try {
-      const response = await apiService.get(`/cameras/${cameraId}/resolutions`);
-      if (response.data.success) {
-        setSupportedResolutions(response.data.data.supported_resolutions);
+      const response = await apiService.getSupportedResolutions(cameraId);
+      if (response.success) {
+        setSupportedResolutions(response.data.supported_resolutions);
       }
     } catch (error) {
       console.error('Failed to load supported resolutions:', error);
@@ -146,7 +146,7 @@ export const CameraSettingsModal: React.FC<CameraSettingsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Camera Settings - ${camera.name}`}
-      maxWidth="md"
+      size="md"
     >
       <div className="space-y-6">
         {error && (

@@ -816,10 +816,10 @@ async def get_detected_cameras(
         }
     except Exception as e:
         logger.error(f"Failed to get detected cameras: {e}")
-                 raise HTTPException(
-             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-             detail=f"Failed to get detected cameras: {str(e)}"
-         )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get detected cameras: {str(e)}"
+        )
 
 @router.put("/{camera_id}/settings", response_model=MessageResponse)
 async def update_camera_settings(
