@@ -113,13 +113,15 @@ class CameraConfig(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # Optional fields - only needed for network cameras or advanced features
-    camera_name = Column(String, nullable=True)  # Display name (optional)
+    name = Column(String, nullable=True)  # Display name (camera_name alias)
+    source = Column(String, nullable=True)  # Camera source (index, IP, or URL)
+    location = Column(String, nullable=True)  # Human-readable location
     ip_address = Column(String, nullable=True)  # Only for network cameras
     stream_url = Column(String, nullable=True)  # Only for network cameras
     username = Column(String, nullable=True)  # Only for authenticated cameras
     password = Column(String, nullable=True)  # Only for authenticated cameras
     status = Column(String, default='active')  # Status tracking (optional)
-    location_description = Column(String, nullable=True)  # Human-readable location
+    location_description = Column(String, nullable=True)  # Legacy location field
     manufacturer = Column(String, nullable=True)  # Camera manufacturer
     model = Column(String, nullable=True)  # Camera model
     firmware_version = Column(String, nullable=True)  # Camera firmware

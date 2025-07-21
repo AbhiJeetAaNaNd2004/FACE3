@@ -1079,14 +1079,13 @@ async def configure_camera_for_fts(
         created_tripwires = []
         
         for tripwire_data in tripwires_data:
-            tripwire = {
-                "camera_id": new_camera.id,
+            tripwire_dict = {
                 "name": tripwire_data.get("name", "Detection Zone"),
                 "position": tripwire_data.get("position", 0.5),
                 "direction": tripwire_data.get("direction", "horizontal"),
                 "spacing": tripwire_data.get("spacing", 0.05)
             }
-            created_tripwire = db_manager.create_tripwire(tripwire)
+            created_tripwire = db_manager.create_tripwire(new_camera.id, tripwire_dict)
             created_tripwires.append(created_tripwire)
         
         return {

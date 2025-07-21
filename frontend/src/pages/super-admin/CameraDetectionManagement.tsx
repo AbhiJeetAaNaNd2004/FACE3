@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { apiService } from '../../services/api';
+
+// Simple notification system (replace with proper toast library if needed)
+const notify = {
+  success: (message: string) => {
+    console.log('SUCCESS:', message);
+    alert('✅ ' + message);
+  },
+  error: (message: string) => {
+    console.error('ERROR:', message);
+    alert('❌ ' + message);
+  }
+};
 
 interface DetectedCamera {
   camera_id: number;
@@ -138,10 +149,10 @@ const CameraDetectionManagement: React.FC = () => {
           configured_cameras: response.data.configured_cameras,
           available_for_configuration: response.data.available_for_configuration
         });
-        toast.success(`Camera detection completed! Found ${response.data.working_cameras} working cameras.`);
+        notify.success(`Camera detection completed! Found ${response.data.working_cameras} working cameras.`);
       }
-    } catch (error: any) {
-      toast.error('Failed to detect cameras: ' + (error.response?.data?.detail || error.message));
+          } catch (error: any) {
+        notify.error('Failed to detect cameras: ' + (error.response?.data?.detail || error.message));
     } finally {
       setDetecting(false);
     }
@@ -149,11 +160,11 @@ const CameraDetectionManagement: React.FC = () => {
 
   const openConfigurationModal = (camera: DetectedCamera) => {
     if (!camera.is_working) {
-      toast.error('Cannot configure a non-working camera');
+      notify.error('Cannot configure a non-working camera');
       return;
     }
     if (camera.is_configured_for_fts) {
-      toast.error('Camera is already configured for FTS');
+      notify.error('Camera is already configured for FTS');
       return;
     }
 
@@ -191,32 +202,32 @@ const CameraDetectionManagement: React.FC = () => {
 
       const response = await apiService.configureCameraForFts(configData);
       if (response.success) {
-        toast.success(`Camera "${configForm.camera_name}" configured successfully!`);
+        notify.success(`Camera "${configForm.camera_name}" configured successfully!`);
         setShowConfigModal(false);
         loadDetectedCameras();
         loadConfiguredCameras();
       }
     } catch (error: any) {
-      toast.error('Failed to configure camera: ' + (error.response?.data?.detail || error.message));
+      notify.error('Failed to configure camera: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
   };
 
   const removeFromFts = async (configuredCamera: ConfiguredCamera) => {
-    if (!confirm(`Are you sure you want to remove "${configuredCamera.name}" from FTS configuration?`)) {
+    if (!window.confirm(`Are you sure you want to remove "${configuredCamera.name}" from FTS configuration?`)) {
       return;
     }
 
     try {
       const response = await apiService.removeCameraFromFts(configuredCamera.id);
       if (response.success) {
-        toast.success(`Camera "${configuredCamera.name}" removed from FTS configuration`);
+        notify.success(`Camera "${configuredCamera.name}" removed from FTS configuration`);
         loadDetectedCameras();
         loadConfiguredCameras();
       }
     } catch (error: any) {
-      toast.error('Failed to remove camera: ' + (error.response?.data?.detail || error.message));
+      notify.error('Failed to remove camera: ' + (error.response?.data?.detail || error.message));
     }
   };
 
