@@ -301,7 +301,7 @@ class AutoCameraDetector:
                 
                 camera = DetectedCamera(
                     camera_id=db_cam.camera_id,
-                    name=db_cam.camera_name,
+                    name=db_cam.name,
                     type=db_cam.camera_type,
                     source=source,
                     resolution=(1280, 720),  # Default
@@ -450,7 +450,7 @@ class AutoCameraDetector:
                 
                 if existing:
                     # Update existing camera
-                    existing.camera_name = camera.name
+                    existing.name = camera.name
                     existing.camera_type = camera.type.lower()
                     existing.is_active = camera.is_working
                     existing.stream_url = camera.stream_url
@@ -468,7 +468,7 @@ class AutoCameraDetector:
                     # Create new camera in database
                     db_camera = DBCameraConfig(
                         camera_id=camera.camera_id,
-                        camera_name=camera.name,
+                        name=camera.name,
                         camera_type=camera.type.lower(),
                         gpu_id=0,  # Will be assigned by FTS system
                         stream_url=camera.stream_url,

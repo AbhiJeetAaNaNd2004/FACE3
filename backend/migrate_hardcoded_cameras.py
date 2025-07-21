@@ -103,7 +103,7 @@ def migrate_hardcoded_cameras():
             db_camera = db_manager.create_camera(db_camera_data)
             
             if db_camera:
-                logger.info(f"Created camera {camera_id}: {db_camera.camera_name}")
+                logger.info(f"Created camera {camera_id}: {db_camera.name}")
                 
                 # Create tripwires
                 tripwire_count = 0
@@ -146,7 +146,7 @@ def verify_migration(db_manager: DatabaseManager):
         
         # Check each migrated camera
         for camera in active_cameras:
-            logger.info(f"Camera {camera.camera_id}: {camera.camera_name}")
+            logger.info(f"Camera {camera.camera_id}: {camera.name}")
             logger.info(f"  Type: {camera.camera_type}")
             logger.info(f"  Resolution: {camera.resolution_width}x{camera.resolution_height}")
             logger.info(f"  FPS: {camera.fps}")

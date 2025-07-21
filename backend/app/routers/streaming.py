@@ -407,7 +407,7 @@ async def get_camera_status(
             if not any(cam["id"] == db_cam.camera_id for cam in all_cameras):
                 all_cameras.append({
                     "id": db_cam.camera_id,
-                    "name": db_cam.camera_name,
+                    "name": db_cam.name,
                     "type": db_cam.camera_type,
                     "status": "configured" if db_cam.is_active else "inactive",
                     "resolution": f"{db_cam.resolution_width}x{db_cam.resolution_height}",

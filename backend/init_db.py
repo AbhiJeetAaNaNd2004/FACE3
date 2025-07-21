@@ -181,12 +181,12 @@ def initialize_database():
             # Create sample camera configuration
             camera = CameraConfig(
                 camera_id=0,
-                camera_name="Main Entrance Camera",
+                name="Main Entrance Camera",
                 camera_type="entry",
                 resolution_width=640,
                 resolution_height=480,
                 fps=30,
-                status="discovered",
+                status="active",
                 is_active=True,
                 location_description="Main entrance door"
             )
