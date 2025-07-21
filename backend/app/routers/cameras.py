@@ -746,3 +746,76 @@ async def reload_camera_configurations(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reloading camera configurations: {str(e)}"
         )
+
+@router.post("/auto-detect", response_model=MessageResponse)
+async def auto_detect_cameras(
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Automatically detect all available cameras and configure them (Admin+ only)
+    """
+    try:
+        from utils.auto_camera_detector import get_auto_detector
+        
+        # Get the auto detector instance
+        auto_detector = get_auto_detector()
+        
+        # Run comprehensive camera detection
+        detected_cameras = await auto_detector.detect_all_cameras()
+        
+        return MessageResponse(
+            success=True,
+            message=f"Successfully detected and configured {len(detected_cameras)} cameras"
+        )
+    except Exception as e:
+        logger.error(f"Failed to auto-detect cameras: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to auto-detect cameras: {str(e)}"
+        )
+
+@router.get("/detected")
+async def get_detected_cameras(
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Get list of currently detected cameras (Admin+ only)
+    """
+    try:
+        from utils.auto_camera_detector import get_auto_detector
+        
+        auto_detector = get_auto_detector()
+        detected_cameras = auto_detector.get_detected_cameras()
+        
+        # Convert to API response format
+        camera_list = []
+        for camera in detected_cameras:
+            camera_dict = {
+                "camera_id": camera.camera_id,
+                "name": camera.name,
+                "type": camera.type,
+                "source": camera.source,
+                "resolution": f"{camera.resolution[0]}x{camera.resolution[1]}",
+                "fps": camera.fps,
+                "status": camera.status,
+                "is_working": camera.is_working,
+                "last_seen": camera.last_seen.isoformat() if camera.last_seen else None,
+                "ip_address": camera.ip_address,
+                "stream_url": camera.stream_url
+            }
+            camera_list.append(camera_dict)
+            
+        return {
+            "success": True,
+            "data": {
+                "detected_cameras": camera_list,
+                "total_detected": len(camera_list),
+                "working_cameras": len([c for c in detected_cameras if c.is_working])
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to get detected cameras: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get detected cameras: {str(e)}"
+        )

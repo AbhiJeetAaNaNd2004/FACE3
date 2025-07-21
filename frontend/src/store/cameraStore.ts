@@ -17,6 +17,8 @@ interface CameraActions {
   updateCamera: (cameraId: number, updateData: Partial<CameraCreate>) => Promise<void>;
   deleteCamera: (cameraId: number) => Promise<void>;
   discoverCameras: () => Promise<void>;
+  autoDetectCameras: () => Promise<void>;
+  getDetectedCameras: () => Promise<any>;
   fetchTripwires: (cameraId: number) => Promise<void>;
   createTripwire: (cameraId: number, tripwireData: any) => Promise<void>;
   updateTripwire: (tripwireId: number, updateData: any) => Promise<void>;
@@ -187,6 +189,36 @@ export const useCameraStore = create<CameraState & CameraActions>()((set, get) =
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Failed to delete tripwire',
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  autoDetectCameras: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      await apiService.autoDetectCameras();
+      // Refresh camera list after auto-detection
+      await get().fetchCameras();
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || 'Failed to auto-detect cameras',
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  getDetectedCameras: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const result = await apiService.getDetectedCameras();
+      set({ isLoading: false });
+      return result;
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || 'Failed to get detected cameras',
         isLoading: false,
       });
       throw error;

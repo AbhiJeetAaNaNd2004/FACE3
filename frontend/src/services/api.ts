@@ -193,6 +193,16 @@ class ApiService {
     return response.data;
   }
 
+  async autoDetectCameras(): Promise<MessageResponse> {
+    const response = await this.api.post<MessageResponse>('/cameras/auto-detect');
+    return response.data;
+  }
+
+  async getDetectedCameras(): Promise<any> {
+    const response = await this.api.get<any>('/cameras/detected');
+    return response.data;
+  }
+
   // System endpoints
   async startFaceDetection(): Promise<MessageResponse> {
     const response = await this.api.post<MessageResponse>('/system/start');

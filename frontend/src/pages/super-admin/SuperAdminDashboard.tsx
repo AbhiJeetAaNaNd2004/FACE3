@@ -1,9 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSystemStore } from '../../store/systemStore';
+import { useCameraStore } from '../../store/cameraStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
+import { apiService } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export const SuperAdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     dashboardStats, 
     systemStatus, 
@@ -13,6 +18,11 @@ export const SuperAdminDashboard: React.FC = () => {
     isLoading, 
     error 
   } = useSystemStore();
+  const { fetchCameras } = useCameraStore();
+  
+  const [showAutoDetectModal, setShowAutoDetectModal] = useState(false);
+  const [autoDetectLoading, setAutoDetectLoading] = useState(false);
+  const [autoDetectResult, setAutoDetectResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -37,6 +47,57 @@ export const SuperAdminDashboard: React.FC = () => {
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${minutes}m`;
   };
+
+  const handleAutoDetectCameras = async () => {
+    try {
+      setAutoDetectLoading(true);
+      setAutoDetectResult(null);
+      
+      const response = await apiService.autoDetectCameras();
+      setAutoDetectResult(response.message);
+      
+      // Refresh cameras and dashboard stats
+      await fetchCameras();
+      await fetchDashboardStats();
+    } catch (error: any) {
+      setAutoDetectResult(error.response?.data?.message || 'Failed to auto-detect cameras');
+    } finally {
+      setAutoDetectLoading(false);
+    }
+  };
+
+  const quickActions = [
+    {
+      icon: '👥',
+      label: 'Manage Users',
+      action: () => navigate('/super-admin/users')
+    },
+    {
+      icon: '📹',
+      label: 'Camera Settings',
+      action: () => navigate('/admin/cameras')
+    },
+    {
+      icon: '🔍',
+      label: 'Auto-Detect Cameras',
+      action: () => setShowAutoDetectModal(true)
+    },
+    {
+      icon: '📊',
+      label: 'View Logs',
+      action: () => navigate('/admin/attendance')
+    },
+    {
+      icon: '📺',
+      label: 'Live Monitor',
+      action: () => navigate('/admin/live-monitor')
+    },
+    {
+      icon: '⚙️',
+      label: 'System Config',
+      action: () => navigate('/admin/cameras')
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -187,26 +248,67 @@ export const SuperAdminDashboard: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">👥</span>
-              <span>Manage Users</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">📹</span>
-              <span>Camera Settings</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">📊</span>
-              <span>View Logs</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">⚙️</span>
-              <span>System Config</span>
-            </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quickActions.map((action, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="h-20 flex-col hover:bg-gray-50 transition-colors"
+                onClick={action.action}
+              >
+                <span className="text-lg mb-1">{action.icon}</span>
+                <span className="text-sm font-medium">{action.label}</span>
+              </Button>
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Auto-detect Cameras Modal */}
+      <Modal
+        isOpen={showAutoDetectModal}
+        onClose={() => {
+          setShowAutoDetectModal(false);
+          setAutoDetectResult(null);
+        }}
+        title="Auto-Detect Cameras"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            This will scan for all available cameras (USB, built-in, and network cameras) 
+            and automatically configure them for the face recognition system.
+          </p>
+          
+          {autoDetectResult && (
+            <div className={`p-3 rounded-md ${
+              autoDetectResult.includes('Failed') 
+                ? 'bg-red-50 text-red-700 border border-red-200' 
+                : 'bg-green-50 text-green-700 border border-green-200'
+            }`}>
+              {autoDetectResult}
+            </div>
+          )}
+          
+          <div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAutoDetectModal(false);
+                setAutoDetectResult(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAutoDetectCameras}
+              loading={autoDetectLoading}
+              disabled={autoDetectLoading}
+            >
+              {autoDetectLoading ? 'Detecting...' : 'Start Detection'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
