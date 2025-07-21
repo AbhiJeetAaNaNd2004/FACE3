@@ -4,20 +4,130 @@ A comprehensive face recognition-based attendance tracking system with real-time
 
 ## 📋 Table of Contents
 
-1. [Features Overview](#-features-overview)
-2. [System Requirements](#-system-requirements)
-3. [Installation Guide](#-installation-guide)
+1. [Quick Start](#-quick-start)
+   - [Fixed Quick Start (Recommended)](#-option-1-fixed-quick-start-recommended-for-memory-issues)
+   - [Standard Quick Start](#-option-2-standard-quick-start)
+   - [Software Dependencies](#software-dependencies)
+2. [Installation](#-installation)
+   - [Standard Installation](#method-1-standard-installation)
+   - [GPU Accelerated Installation](#method-2-gpu-accelerated-installation)
+   - [Docker Installation](#method-3-docker-installation)
+   - [System Dependencies](#system-dependencies-ubuntudebian)
+3. [Features Overview](#-features-overview)
+4. [System Requirements](#-system-requirements)
+5. [Installation Guide](#-installation-guide)
    - [Windows Setup](#windows-setup)
    - [Linux Setup](#linux-setup)
-4. [Database Setup](#-database-setup)
-5. [Environment Configuration](#-environment-configuration)
-6. [Starting the System](#-starting-the-system)
-7. [Camera Management](#-camera-management)
-8. [Usage Guide](#-usage-guide)
-9. [Troubleshooting](#-troubleshooting)
-10. [Performance Optimization](#-performance-optimization)
-11. [Production Deployment](#-production-deployment)
-12. [API Documentation](#-api-documentation)
+6. [Database Setup](#-database-setup)
+7. [Environment Configuration](#-environment-configuration)
+8. [Starting the System](#-starting-the-system)
+9. [Camera Management](#-camera-management)
+10. [Usage Guide](#-usage-guide)
+11. [Troubleshooting](#-troubleshooting)
+12. [Performance Optimization](#-performance-optimization)
+13. [Production Deployment](#-production-deployment)
+14. [API Documentation](#-api-documentation)
+
+---
+
+## 🚀 Quick Start
+
+### ⚡ Option 1: Fixed Quick Start (Recommended for Memory Issues)
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd face-recognition-attendance-system
+
+# 2. Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate  # Windows
+
+# 3. Install all dependencies
+pip install -r requirements.txt
+cd frontend && npm install && cd ..
+
+# 4. Setup database (PostgreSQL)
+python setup_postgresql.py  # Creates PostgreSQL database
+python backend/init_db.py   # Initializes tables and sample data
+
+# 5. Start with memory optimizations (RECOMMENDED)
+python start_system_fixed.py
+```
+
+### ⚡ Option 2: Standard Quick Start
+
+```bash
+# Follow steps 1-4 above, then:
+
+# 5. Start the unified server with face tracking
+python start_unified_server.py --enable-fts
+```
+
+### Software Dependencies
+```bash
+# Core requirements
+Python 3.8+         # Backend runtime
+Node.js 16+         # Frontend build tools (optional)
+PostgreSQL 12+      # Database server (recommended)
+Git                 # Version control
+
+# Optional (for GPU acceleration)
+CUDA Toolkit 11.x   # For GPU-accelerated face recognition
+```
+
+## 🔧 Installation
+
+### Method 1: Standard Installation
+
+```bash
+# Install core dependencies
+pip install fastapi uvicorn sqlalchemy requests python-dotenv
+
+# Install computer vision libraries
+pip install opencv-python numpy Pillow
+
+# Install face recognition libraries
+pip install onnxruntime faiss-cpu insightface
+
+# Install all dependencies at once
+pip install -r requirements.txt
+```
+
+### Method 2: GPU Accelerated Installation
+
+```bash
+# For NVIDIA GPU acceleration
+pip install faiss-gpu onnxruntime-gpu
+
+# Verify CUDA compatibility
+python -c "import torch; print(torch.cuda.is_available())"
+```
+
+### Method 3: Docker Installation
+
+```bash
+# Build the container
+docker build -t face-recognition-attendance .
+
+# Run the container
+docker run -p 8000:8000 -p 3000:3000 face-recognition-attendance
+```
+
+### System Dependencies (Ubuntu/Debian)
+```bash
+# Install system packages
+sudo apt update
+sudo apt install -y \
+  python3 python3-pip python3-dev \
+  nodejs npm \
+  postgresql postgresql-contrib \
+  build-essential cmake \
+  libopencv-dev python3-opencv \
+  git curl wget
+```
 
 ---
 
@@ -35,10 +145,11 @@ A comprehensive face recognition-based attendance tracking system with real-time
 - **📡 Live Monitoring** - Real-time camera feeds with detection overlays
 
 ### 🔧 **Advanced Features**
-- **🔍 Zero-Configuration Setup** - FTS automatically detects and configures all cameras on startup
-- **⚙️ Individual Camera Settings** - Configure name, resolution, FPS, location per camera
-- **📐 Tripwire Detection** - Configurable entry/exit zones with directional detection
+- **🔍 Comprehensive Camera Detection** - Detects USB, built-in, and IP cameras automatically
+- **⚙️ Smart Camera Configuration** - Super admin interface for selecting and configuring cameras for FTS
+- **📐 Advanced Tripwire System** - Configurable detection zones with directional crossing detection
 - **🌐 ONVIF Camera Discovery** - Automatic network camera detection and integration
+- **🎛️ Granular Camera Control** - Enable/disable cameras, adjust settings, and manage FTS integration
 - **⚡ Real-time Updates** - WebSocket-based live activity feeds
 - **🔐 JWT Authentication** - Secure token-based authentication system
 - **📈 Performance Monitoring** - Real-time system stats and camera performance metrics

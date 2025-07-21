@@ -6,6 +6,7 @@ import { LoginPage } from './pages/login/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { SuperAdminDashboard } from './pages/super-admin/SuperAdminDashboard';
 import { UserManagement } from './pages/super-admin/UserManagement';
+import CameraDetectionManagement from './pages/super-admin/CameraDetectionManagement';
 import { EmployeeManagement } from './pages/admin/EmployeeManagement';
 import { AttendanceDashboard } from './pages/admin/AttendanceDashboard';
 import { CameraManagement } from './pages/admin/CameraManagement';
@@ -147,6 +148,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
                   <CameraManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/camera-detection"
+              element={
+                <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
+                  <CameraDetectionManagement />
                 </ProtectedRoute>
               }
             />

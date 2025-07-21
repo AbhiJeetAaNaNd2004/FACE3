@@ -151,10 +151,31 @@ def load_camera_configurations() -> List[CameraConfig]:
     try:
         # First, run auto-detection to find all available cameras
         auto_detector = get_auto_detector()
-        detected_cameras = auto_detector.detect_all_cameras()
+        
+        # Run async detection in a sync context
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        if loop.is_running():
+            # If loop is already running, create a new thread
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, auto_detector.detect_all_cameras())
+                detected_cameras = future.result(timeout=30)
+        else:
+            detected_cameras = loop.run_until_complete(auto_detector.detect_all_cameras())
         
         # Sync detected cameras to database
-        auto_detector.sync_to_database(detected_cameras)
+        if loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, auto_detector.sync_to_database(detected_cameras))
+                future.result(timeout=10)
+        else:
+            loop.run_until_complete(auto_detector.sync_to_database(detected_cameras))
         
         # Load camera configurations from database (which now includes detected cameras)
         db_camera_configs = load_active_camera_configs()
@@ -518,6 +539,7 @@ class FaceTrackingSystem:
         self.updates_since_last_rebuild = 0
         self.max_updates_before_rebuild = 20
         self.db_manager = DatabaseManager()
+        self.camera_threads = []  # Initialize camera threads list
         create_tables()
         
         # Start auto camera detection
@@ -1524,9 +1546,14 @@ class FaceTrackingSystem:
         try:
             # Load camera configurations from database
             cameras = load_camera_configurations()
-            log_message(f"Starting tracking for {len(cameras)} cameras")
+            log_message(f"Loading camera configurations: found {len(cameras)} cameras")
+            
+            if not cameras:
+                log_message("No cameras found. Please add cameras through the web interface.")
+                log_message("FTS will continue running and can be configured via the API.")
             
             for camera_config in cameras:
+                log_message(f"Starting tracking thread for camera {camera_config.camera_id}: {camera_config.camera_name}")
                 thread = threading.Thread(
                     target=self.process_camera,
                     args=(camera_config,),
@@ -1534,6 +1561,10 @@ class FaceTrackingSystem:
                 thread.start()
                 self.camera_threads.append(thread)
                 time.sleep(1)
+                
+            log_message(f"All camera threads started. Total active cameras: {len(self.camera_threads)}")
+            
+            # Keep the main tracking loop running
             while not self.shutdown_flag.is_set():
                 time.sleep(1)
         except KeyboardInterrupt:
@@ -1690,17 +1721,34 @@ def start_tracking_service():
         log_message("Continuing with existing camera configurations...")
     
     # Step 2: Initialize FTS system
-    system_instance = FaceTrackingSystem()
-    
-    # Step 3: Start tracking
-    tracking_thread = threading.Thread(
-        target=system_instance.start_multi_camera_tracking, 
-        daemon=True
-    )
-    tracking_thread.start()
-    is_tracking_running = True
-    start_time = time.time()
-    log_message("Tracking service started with auto-detected cameras")
+    try:
+        system_instance = FaceTrackingSystem()
+        log_message("FTS system instance created successfully")
+        
+        # Step 3: Start tracking
+        tracking_thread = threading.Thread(
+            target=system_instance.start_multi_camera_tracking, 
+            daemon=True
+        )
+        tracking_thread.start()
+        is_tracking_running = True
+        start_time = time.time()
+        log_message("Tracking service started successfully")
+        
+        # Wait a moment to let tracking initialize
+        time.sleep(2)
+        
+        # Check if any cameras were loaded
+        if hasattr(system_instance, 'camera_threads') and len(system_instance.camera_threads) > 0:
+            log_message(f"Face tracking is running with {len(system_instance.camera_threads)} camera(s)")
+        else:
+            log_message("Warning: Face tracking started but no cameras were detected or configured")
+            log_message("Please add cameras through the web interface or ensure cameras are connected")
+            
+    except Exception as e:
+        log_message(f"Failed to initialize FTS system: {e}")
+        is_tracking_running = False
+        raise e
 
 def shutdown_tracking_service():
     """Shutdown the face tracking service"""

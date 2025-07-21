@@ -104,10 +104,15 @@ class AutoCameraDetector:
         cameras = []
         logger.info("Scanning for USB/built-in cameras...")
         
-        # Check indices 0-20 for USB cameras
-        for i in range(20):
+        # Check indices 0-5 for USB cameras (reduced range to minimize errors)
+        for i in range(5):
             try:
-                cap = cv2.VideoCapture(i)
+                # Suppress OpenCV errors during camera detection
+                cap = cv2.VideoCapture(i, cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2)
+                
+                # Set a timeout for camera initialization
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                
                 if cap.isOpened():
                     # Try to read a frame to verify camera is working
                     ret, frame = cap.read()

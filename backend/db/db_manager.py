@@ -301,6 +301,19 @@ class DatabaseManager:
             if session:
                 session.close()
 
+    def get_camera_by_source(self, source: str) -> Optional[CameraConfig]:
+        """Get camera by source (camera index, IP, or stream URL)"""
+        session = None
+        try:
+            session = self.Session()
+            return session.query(CameraConfig).filter(CameraConfig.source == source).first()
+        except Exception as e:
+            self.logger.error(f"Error getting camera by source {source}: {e}")
+            return None
+        finally:
+            if session:
+                session.close()
+
     def update_camera(self, camera_id: int, update_data: dict) -> Optional[CameraConfig]:
         """Update camera configuration"""
         session = None

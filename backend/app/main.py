@@ -103,14 +103,23 @@ async def initialize_fts_system():
 async def shutdown_fts_system():
     """Shutdown the Face Tracking System gracefully"""
     try:
-        from core.fts_system import shutdown_tracking_service, is_tracking_running
+        from core.fts_system import shutdown_tracking_service, is_tracking_running, system_instance
         
         if is_tracking_running:
             logger.info("🔄 Shutting down Face Tracking System...")
+            
+            # Log system state before shutdown
+            if system_instance and hasattr(system_instance, 'camera_threads'):
+                logger.info(f"📊 Shutting down {len(system_instance.camera_threads)} camera threads")
+            
             shutdown_tracking_service()
             logger.info("✅ Face Tracking System shut down successfully")
         else:
             logger.info("ℹ️ Face Tracking System was not running")
+            if system_instance:
+                logger.info("🔍 FTS instance exists but tracking was not active")
+            else:
+                logger.info("🔍 No FTS instance was created")
     except Exception as e:
         logger.error(f"❌ Error during FTS shutdown: {e}")
 
