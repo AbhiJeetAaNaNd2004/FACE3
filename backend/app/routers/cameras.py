@@ -114,7 +114,7 @@ async def get_cameras(
             camera_info = CameraInfo(
                 id=camera.id,
                 camera_id=camera.camera_id,
-                camera_name=camera.camera_name,
+                camera_name=camera.name,
                 camera_type=camera.camera_type,
                 ip_address=camera.ip_address,
                 stream_url=camera.stream_url,
@@ -187,7 +187,7 @@ async def get_camera(
         return CameraInfo(
             id=camera.id,
             camera_id=camera.camera_id,
-            camera_name=camera.camera_name,
+            camera_name=camera.name,
             camera_type=camera.camera_type,
             ip_address=camera.ip_address,
             stream_url=camera.stream_url,
@@ -253,7 +253,7 @@ async def create_camera(
         return CameraInfo(
             id=camera.id,
             camera_id=camera.camera_id,
-            camera_name=camera.camera_name,
+            camera_name=camera.name,
             camera_type=camera.camera_type,
             ip_address=camera.ip_address,
             stream_url=camera.stream_url,
@@ -311,7 +311,7 @@ async def update_camera(
         return CameraInfo(
             id=camera.id,
             camera_id=camera.camera_id,
-            camera_name=camera.camera_name,
+            camera_name=camera.name,
             camera_type=camera.camera_type,
             ip_address=camera.ip_address,
             stream_url=camera.stream_url,
@@ -397,7 +397,7 @@ async def configure_camera(
         return CameraInfo(
             id=camera.id,
             camera_id=camera.camera_id,
-            camera_name=camera.camera_name,
+            camera_name=camera.name,
             camera_type=camera.camera_type,
             ip_address=camera.ip_address,
             stream_url=camera.stream_url,
@@ -531,7 +531,7 @@ async def get_camera_status(
         # For now, we'll return mock status
         return CameraStatusResponse(
             camera_id=camera.camera_id,
-            camera_name=camera.camera_name,
+            camera_name=camera.name,
             status=camera.status,
             is_active=camera.is_active,
             last_seen=camera.updated_at,
@@ -913,7 +913,7 @@ async def update_camera_settings(
         # Prepare update data
         update_data = {}
         if settings.camera_name is not None:
-            update_data['camera_name'] = settings.camera_name
+            update_data['name'] = settings.camera_name
         if settings.resolution_width is not None:
             update_data['resolution_width'] = settings.resolution_width
         if settings.resolution_height is not None:

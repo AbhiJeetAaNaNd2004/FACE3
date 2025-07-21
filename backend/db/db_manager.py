@@ -214,7 +214,7 @@ class DatabaseManager:
             
             camera = CameraConfig(
                 camera_id=camera_id,
-                camera_name=camera_data['camera_name'],
+                name=camera_data['camera_name'],
                 camera_type=camera_data.get('camera_type', 'general'),
                 ip_address=camera_data.get('ip_address'),
                 stream_url=camera_data.get('stream_url'),
@@ -237,7 +237,7 @@ class DatabaseManager:
             session.commit()
             session.refresh(camera)
             
-            self.logger.info(f"Created camera {camera.camera_id}: {camera.camera_name}")
+            self.logger.info(f"Created camera {camera.camera_id}: {camera.name}")
             return camera
             
         except Exception as e:
@@ -526,7 +526,7 @@ class DatabaseManager:
                 
                 camera = CameraConfig(
                     camera_id=next_camera_id,
-                    camera_name=f"Camera {camera_data['ip_address']}",
+                    name=f"Camera {camera_data['ip_address']}",
                     camera_type='general',
                     ip_address=camera_data['ip_address'],
                     stream_url=camera_data.get('stream_urls', [None])[0],

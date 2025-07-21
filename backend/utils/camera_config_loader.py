@@ -147,7 +147,7 @@ class CameraConfigLoader:
                 tripwires=tripwires,
                 resolution=(db_camera.resolution_width, db_camera.resolution_height),
                 fps=db_camera.fps,
-                camera_name=db_camera.camera_name or f"Camera {db_camera.camera_id}"
+                camera_name=db_camera.name or f"Camera {db_camera.camera_id}"
             )
             
             return camera_config

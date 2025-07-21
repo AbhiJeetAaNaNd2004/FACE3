@@ -202,7 +202,7 @@ def load_camera_configurations() -> List[CameraConfig]:
                 tripwires=tripwires,
                 resolution=db_config.resolution,
                 fps=db_config.fps,
-                camera_name=getattr(db_config, 'camera_name', None) or f"Camera {db_config.camera_id}"
+                camera_name=getattr(db_config, 'name', None) or f"Camera {db_config.camera_id}"
             )
             
             cameras.append(camera_config)
