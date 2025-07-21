@@ -233,6 +233,15 @@ class CameraUpdate(BaseModel):
     status: Optional[CameraStatus] = None
     is_active: Optional[bool] = None
 
+class CameraSettingsUpdate(BaseModel):
+    """Schema for updating camera settings via camera management UI"""
+    camera_name: Optional[str] = Field(None, description="Display name for the camera")
+    resolution_width: Optional[int] = Field(None, ge=320, le=4096, description="Camera resolution width")
+    resolution_height: Optional[int] = Field(None, ge=240, le=2160, description="Camera resolution height") 
+    fps: Optional[int] = Field(None, ge=1, le=120, description="Frames per second")
+    location_description: Optional[str] = Field(None, description="Physical location description")
+    is_active: Optional[bool] = Field(None, description="Whether camera is active")
+
 class CameraInfo(CameraBase):
     id: int
     camera_id: int

@@ -19,6 +19,7 @@ interface CameraActions {
   discoverCameras: () => Promise<void>;
   autoDetectCameras: () => Promise<void>;
   getDetectedCameras: () => Promise<any>;
+  updateCameraSettings: (cameraId: number, settings: any) => Promise<void>;
   fetchTripwires: (cameraId: number) => Promise<void>;
   createTripwire: (cameraId: number, tripwireData: any) => Promise<void>;
   updateTripwire: (tripwireId: number, updateData: any) => Promise<void>;
@@ -219,6 +220,22 @@ export const useCameraStore = create<CameraState & CameraActions>()((set, get) =
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Failed to get detected cameras',
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  updateCameraSettings: async (cameraId: number, settings: any) => {
+    try {
+      set({ isLoading: true, error: null });
+      await apiService.updateCameraSettings(cameraId, settings);
+      
+      // Refresh camera list to get updated settings
+      await get().fetchCameras();
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || 'Failed to update camera settings',
         isLoading: false,
       });
       throw error;

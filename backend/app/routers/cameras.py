@@ -14,7 +14,8 @@ from app.schemas import (
     CameraDiscoveryRequest, CameraDiscoveryResponse, CameraDiscoveryResult,
     CameraConfigurationRequest, CameraActivationRequest,
     CameraInfo, CameraListResponse, CameraStatusResponse,
-    CameraCreate, CameraUpdate, TripwireCreate, TripwireUpdate, Tripwire
+    CameraCreate, CameraUpdate, TripwireCreate, TripwireUpdate, Tripwire,
+    CameraSettingsUpdate
 )
 from app.security import require_admin_or_above, require_super_admin
 from db.db_manager import DatabaseManager
@@ -815,7 +816,117 @@ async def get_detected_cameras(
         }
     except Exception as e:
         logger.error(f"Failed to get detected cameras: {e}")
+                 raise HTTPException(
+             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+             detail=f"Failed to get detected cameras: {str(e)}"
+         )
+
+@router.put("/{camera_id}/settings", response_model=MessageResponse)
+async def update_camera_settings(
+    camera_id: int,
+    settings: CameraSettingsUpdate,
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Update camera settings like name, resolution, FPS, etc. (Admin+ only)
+    """
+    try:
+        db_manager = DatabaseManager()
+        
+        # Check if camera exists
+        camera = db_manager.get_camera_by_id(camera_id)
+        if not camera:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Camera with ID {camera_id} not found"
+            )
+        
+        # Prepare update data
+        update_data = {}
+        if settings.camera_name is not None:
+            update_data['camera_name'] = settings.camera_name
+        if settings.resolution_width is not None:
+            update_data['resolution_width'] = settings.resolution_width
+        if settings.resolution_height is not None:
+            update_data['resolution_height'] = settings.resolution_height
+        if settings.fps is not None:
+            update_data['fps'] = settings.fps
+        if settings.location_description is not None:
+            update_data['location_description'] = settings.location_description
+        if settings.is_active is not None:
+            update_data['is_active'] = settings.is_active
+        
+        # Update camera in database
+        success = db_manager.update_camera(camera_id, **update_data)
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update camera settings"
+            )
+        
+        # If FTS is running, reload camera configurations
+        try:
+            from core.fts_system import system_instance, is_tracking_running
+            if is_tracking_running and system_instance:
+                # Trigger camera config reload in FTS
+                system_instance.reload_camera_configurations()
+                logger.info(f"Reloaded FTS camera configurations after updating camera {camera_id}")
+        except Exception as e:
+            logger.warning(f"Failed to reload FTS configurations: {e}")
+        
+        logger.info(f"Updated camera settings for camera {camera_id} by user {current_user.username}")
+        
+        return MessageResponse(
+            success=True,
+            message=f"Camera settings updated successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update camera settings: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get detected cameras: {str(e)}"
+            detail=f"Failed to update camera settings: {str(e)}"
+        )
+
+@router.get("/{camera_id}/resolutions")
+async def get_supported_resolutions(
+    camera_id: int,
+    current_user: CurrentUser = Depends(require_admin_or_above)
+):
+    """
+    Get supported resolutions for a camera (Admin+ only)
+    """
+    try:
+        # Common supported resolutions
+        resolutions = [
+            {"width": 320, "height": 240, "name": "QVGA", "aspect_ratio": "4:3"},
+            {"width": 640, "height": 480, "name": "VGA", "aspect_ratio": "4:3"},
+            {"width": 800, "height": 600, "name": "SVGA", "aspect_ratio": "4:3"},
+            {"width": 1024, "height": 768, "name": "XGA", "aspect_ratio": "4:3"},
+            {"width": 1280, "height": 720, "name": "HD 720p", "aspect_ratio": "16:9"},
+            {"width": 1280, "height": 960, "name": "SXGA", "aspect_ratio": "4:3"},
+            {"width": 1280, "height": 1024, "name": "SXGA", "aspect_ratio": "5:4"},
+            {"width": 1600, "height": 1200, "name": "UXGA", "aspect_ratio": "4:3"},
+            {"width": 1920, "height": 1080, "name": "Full HD 1080p", "aspect_ratio": "16:9"},
+            {"width": 2048, "height": 1536, "name": "QXGA", "aspect_ratio": "4:3"},
+            {"width": 2560, "height": 1440, "name": "QHD 1440p", "aspect_ratio": "16:9"},
+            {"width": 3840, "height": 2160, "name": "4K UHD", "aspect_ratio": "16:9"}
+        ]
+        
+        return {
+            "success": True,
+            "data": {
+                "camera_id": camera_id,
+                "supported_resolutions": resolutions
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get supported resolutions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get supported resolutions: {str(e)}"
         )

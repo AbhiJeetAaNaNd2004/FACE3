@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { CameraSettingsModal } from '../../components/camera/CameraSettingsModal';
 
 export const CameraManagement: React.FC = () => {
   const {
@@ -18,12 +19,15 @@ export const CameraManagement: React.FC = () => {
     updateCamera,
     deleteCamera,
     discoverCameras,
+    updateCameraSettings,
+    autoDetectCameras,
     clearError
   } = useCameraStore();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDiscoverModalOpen, setIsDiscoverModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null);
   const [createFormData, setCreateFormData] = useState<CameraCreate>({
     name: '',
@@ -121,6 +125,31 @@ export const CameraManagement: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
+  const openSettingsModal = (camera: Camera) => {
+    setSelectedCamera(camera);
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleUpdateCameraSettings = async (cameraId: number, settings: any) => {
+    try {
+      await updateCameraSettings(cameraId, settings);
+      // Refresh the camera list
+      await fetchCameras();
+    } catch (error) {
+      throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
+  const handleAutoDetectCameras = async () => {
+    try {
+      await autoDetectCameras();
+      // Refresh the camera list after auto-detection
+      await fetchCameras();
+    } catch (error) {
+      // Error is handled by store
+    }
+  };
+
   const handleDiscoverCameras = async () => {
     await discoverCameras();
     setIsDiscoverModalOpen(true);
@@ -183,6 +212,14 @@ export const CameraManagement: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
+            onClick={() => openSettingsModal(camera)}
+            title="Camera Settings"
+          >
+            ⚙️ Settings
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => openEditModal(camera)}
           >
             Edit
@@ -241,8 +278,15 @@ export const CameraManagement: React.FC = () => {
           <p className="text-gray-600">Manage cameras and monitoring settings</p>
         </div>
         <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={handleAutoDetectCameras}
+            disabled={isLoading}
+          >
+            🔍 Auto-Detect Cameras
+          </Button>
           <Button variant="outline" onClick={handleDiscoverCameras}>
-            Discover Cameras
+            Discover Network Cameras
           </Button>
           <Button onClick={() => setIsCreateModalOpen(true)}>
             Add Camera
@@ -451,6 +495,17 @@ export const CameraManagement: React.FC = () => {
           )}
         </div>
       </Modal>
+
+      {/* Camera Settings Modal */}
+      <CameraSettingsModal
+        camera={selectedCamera}
+        isOpen={isSettingsModalOpen}
+        onClose={() => {
+          setIsSettingsModalOpen(false);
+          setSelectedCamera(null);
+        }}
+        onSave={handleUpdateCameraSettings}
+      />
     </div>
   );
 };
