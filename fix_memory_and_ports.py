@@ -53,7 +53,7 @@ def optimize_system_memory():
     # Disable PyTorch JIT compilation to save memory
     os.environ['PYTORCH_JIT'] = '0'
     
-    print("✅ Memory optimization settings applied")
+    print("Memory optimization settings applied")
 
 def configure_pytorch_memory():
     """Configure PyTorch memory settings"""
@@ -80,14 +80,14 @@ def configure_pytorch_memory():
             torch.cuda.empty_cache()
             # Set memory fraction
             torch.cuda.set_per_process_memory_fraction(0.6)
-            print(f"🎯 CUDA available: {torch.cuda.device_count()} devices")
+            print(f"CUDA available: {torch.cuda.device_count()} devices")
         
-        print("✅ PyTorch memory configuration complete")
+        print("PyTorch memory configuration complete")
         
     except ImportError:
-        print("⚠️ PyTorch not available, skipping PyTorch configuration")
+        print("WARNING: PyTorch not available, skipping PyTorch configuration")
     except Exception as e:
-        print(f"⚠️ Error configuring PyTorch: {e}")
+        print(f"WARNING: Error configuring PyTorch: {e}")
 
 def check_virtual_memory():
     """Check and display virtual memory information"""
@@ -107,10 +107,10 @@ def check_virtual_memory():
         
         # Check if we have enough memory
         if vm.available < 2 * (1024**3):  # Less than 2GB available
-            print("⚠️ Warning: Low memory available. Consider closing other applications.")
+            print("WARNING: Low memory available. Consider closing other applications.")
         
         if swap.percent > 50:
-            print("⚠️ Warning: High swap usage detected. This may cause performance issues.")
+            print("WARNING: High swap usage detected. This may cause performance issues.")
             
     except Exception as e:
         print(f"Error checking memory: {e}")
@@ -139,13 +139,13 @@ def cleanup_temp_files():
                     except:
                         pass
         
-        print("✅ Temporary file cleanup complete")
+        print("Temporary file cleanup complete")
         
     except Exception as e:
         print(f"Error during cleanup: {e}")
 
 def main():
-    print("🔧 Face Tracking System Memory and Port Fixer")
+    print("Face Tracking System Memory and Port Fixer")
     print("=" * 50)
     
     # Check system memory
@@ -166,16 +166,16 @@ def main():
     
     # Check and clean up common ports
     common_ports = [8000, 8001, 8080, 3000, 5000]
-    print("🔍 Checking for port conflicts...")
+    print("Checking for port conflicts...")
     for port in common_ports:
         if check_and_kill_port(port):
-            print(f"✅ Cleaned up port {port}")
+            print(f"Cleaned up port {port}")
         else:
-            print(f"✅ Port {port} is free")
+            print(f"Port {port} is free")
     
     print()
-    print("🎯 System optimization complete!")
-    print("💡 Tips:")
+    print("System optimization complete!")
+    print("Tips:")
     print("   - Start the server with fewer workers (--workers 1)")
     print("   - Disable FTS auto-start if memory is limited")
     print("   - Monitor memory usage during operation")
