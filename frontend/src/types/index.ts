@@ -84,7 +84,11 @@ export interface Camera {
   id: number;
   name: string;
   location: string;
+  location_description?: string;
   stream_url: string;
+  resolution_width?: number;
+  resolution_height?: number;
+  fps?: number;
   is_active: boolean;
   created_at: string;
   updated_at?: string;

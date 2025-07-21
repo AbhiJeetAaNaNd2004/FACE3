@@ -54,14 +54,14 @@ export function DataTable<T>({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = safeData;
+    let filtered = safeData.filter(item => item != null);
 
     // Apply search filter
     if (searchTerm && searchable) {
-      filtered = safeData.filter(item =>
-        columns.some(column => {
+      filtered = filtered.filter(item =>
+        item && columns.some(column => {
           const value = item[column.key as keyof T];
-          return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+          return String(value || '').toLowerCase().includes(searchTerm.toLowerCase());
         })
       );
     }
@@ -183,7 +183,7 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              processedData.map((item, index) => (
+              processedData.filter(item => item != null).map((item, index) => (
                 <tr
                   key={index}
                   className={cn(
@@ -195,8 +195,8 @@ export function DataTable<T>({
                   {columns.map((column) => (
                     <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap">
                       {column.render 
-                        ? column.render(item[column.key as keyof T], item)
-                        : String(item[column.key as keyof T] || '')}
+                        ? column.render(item?.[column.key as keyof T], item)
+                        : String(item?.[column.key as keyof T] || '')}
                     </td>
                   ))}
                 </tr>

@@ -1668,7 +1668,31 @@ def start_tracking_service():
         return
     
     log_message("Starting tracking service...")
+    
+    # Step 1: Auto-detect cameras before initializing FTS
+    log_message("Auto-detecting cameras...")
+    try:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        from utils.auto_camera_detector import get_auto_detector
+        auto_detector = get_auto_detector()
+        detected_cameras = loop.run_until_complete(auto_detector.detect_all_cameras())
+        
+        log_message(f"Auto-detected {len(detected_cameras)} cameras")
+        
+        # Close the event loop
+        loop.close()
+        
+    except Exception as e:
+        log_message(f"Camera auto-detection failed: {e}")
+        log_message("Continuing with existing camera configurations...")
+    
+    # Step 2: Initialize FTS system
     system_instance = FaceTrackingSystem()
+    
+    # Step 3: Start tracking
     tracking_thread = threading.Thread(
         target=system_instance.start_multi_camera_tracking, 
         daemon=True
@@ -1676,7 +1700,7 @@ def start_tracking_service():
     tracking_thread.start()
     is_tracking_running = True
     start_time = time.time()
-    log_message("Tracking service started")
+    log_message("Tracking service started with auto-detected cameras")
 
 def shutdown_tracking_service():
     """Shutdown the face tracking service"""

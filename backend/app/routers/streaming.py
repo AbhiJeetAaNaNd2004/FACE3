@@ -12,6 +12,7 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 import jwt
 from datetime import datetime
+import threading
 
 from app.schemas import CurrentUser
 from app.security import require_admin_or_above
@@ -76,9 +77,13 @@ def detect_cameras():
 
 def generate_camera_stream(camera_id: int) -> Generator[bytes, None, None]:
     """Generate live MJPEG stream from camera with FTS processing"""
+    cap = None  # Initialize cap variable
     try:
         # Try to get processed frame from FTS system first
-        from backend.core.fts_system import system_instance
+        try:
+            from backend.core.fts_system import system_instance
+        except ImportError:
+            system_instance = None
         
         if system_instance and hasattr(system_instance, 'latest_frames'):
             logger.info(f"Using FTS-processed stream for camera {camera_id}")
@@ -153,9 +158,12 @@ def generate_camera_stream(camera_id: int) -> Generator[bytes, None, None]:
             logger.info(f"FTS not available, using direct camera access for camera {camera_id}")
             
             # Get camera from auto-detector or database
-            from backend.utils.auto_camera_detector import get_auto_detector
-            auto_detector = get_auto_detector()
-            detected_cameras = auto_detector.get_detected_cameras()
+            try:
+                from backend.utils.auto_camera_detector import get_auto_detector
+                auto_detector = get_auto_detector()
+                detected_cameras = auto_detector.get_detected_cameras()
+            except ImportError:
+                detected_cameras = []
             
             camera_source = None
             for cam in detected_cameras:
@@ -435,9 +443,12 @@ async def detect_available_cameras(
     """
     try:
         # Use comprehensive auto-detection
-        from backend.utils.auto_camera_detector import get_auto_detector
-        auto_detector = get_auto_detector()
-        detected_cameras = auto_detector.detect_all_cameras()
+        try:
+            from backend.utils.auto_camera_detector import get_auto_detector
+            auto_detector = get_auto_detector()
+            detected_cameras = auto_detector.detect_all_cameras()
+        except ImportError:
+            detected_cameras = []
         
         # Convert to API response format
         camera_list = []

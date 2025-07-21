@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useCameraStore } from '../../store/cameraStore';
 import { useEmployeeStore } from '../../store/employeeStore';
 import { LiveCameraFeed } from '../../components/camera/LiveCameraFeed';
+import { CameraSwitcher } from '../../components/camera/CameraSwitcher';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { useWebSocket } from '../../hooks/useWebSocket';
 
 interface RealtimeActivity {
@@ -21,6 +23,7 @@ export const LiveMonitor: React.FC = () => {
   const { presentEmployees, fetchPresentEmployees } = useEmployeeStore();
   const [realtimeActivity, setRealtimeActivity] = useState<RealtimeActivity[]>([]);
   const [selectedCameras, setSelectedCameras] = useState<number[]>([]);
+  const [showCameraSwitcher, setShowCameraSwitcher] = useState(false);
 
   // WebSocket for real-time activity updates
   const { isConnected } = useWebSocket({
@@ -110,6 +113,13 @@ export const LiveMonitor: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCameraSwitcher(!showCameraSwitcher)}
+          >
+            📹 Switch Cameras
+          </Button>
           <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
             isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
@@ -174,35 +184,42 @@ export const LiveMonitor: React.FC = () => {
         </Card>
       </div>
 
+      {/* Camera Switcher Panel */}
+      {showCameraSwitcher && (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <CameraSwitcher
+              cameras={cameras}
+              selectedCameras={selectedCameras}
+              onCameraToggle={toggleCameraSelection}
+              maxSelection={4}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Feeds */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Live Camera Feeds</CardTitle>
-              <p className="text-sm text-gray-600">
-                Select up to 4 cameras to monitor simultaneously
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Live Camera Feeds</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Viewing {selectedCameraObjects.length} of {cameras.filter(c => c.is_active).length} active cameras
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCameraSwitcher(!showCameraSwitcher)}
+                >
+                  {showCameraSwitcher ? 'Hide' : 'Show'} Camera Selector
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {/* Camera Selection */}
-              <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {cameras.filter(camera => camera.is_active).map(camera => (
-                    <button
-                      key={camera.id}
-                      onClick={() => toggleCameraSelection(camera.id)}
-                                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                         selectedCameras.includes(camera.id)
-                           ? 'bg-primary-600 text-white border-primary-600'
-                           : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                       }`}
-                     >
-                                               {camera.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Camera Grid */}
               <div className={`grid gap-4 ${

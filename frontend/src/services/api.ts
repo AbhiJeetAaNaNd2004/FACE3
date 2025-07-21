@@ -193,6 +193,26 @@ class ApiService {
     return response.data;
   }
 
+  async autoDetectCameras(): Promise<MessageResponse> {
+    const response = await this.api.post<MessageResponse>('/cameras/auto-detect');
+    return response.data;
+  }
+
+  async getDetectedCameras(): Promise<any> {
+    const response = await this.api.get<any>('/cameras/detected');
+    return response.data;
+  }
+
+  async updateCameraSettings(cameraId: number, settings: any): Promise<MessageResponse> {
+    const response = await this.api.put<MessageResponse>(`/cameras/${cameraId}/settings`, settings);
+    return response.data;
+  }
+
+  async getSupportedResolutions(cameraId: number): Promise<any> {
+    const response = await this.api.get<any>(`/cameras/${cameraId}/resolutions`);
+    return response.data;
+  }
+
   // System endpoints
   async startFaceDetection(): Promise<MessageResponse> {
     const response = await this.api.post<MessageResponse>('/system/start');
